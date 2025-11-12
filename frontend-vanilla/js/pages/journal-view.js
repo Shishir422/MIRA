@@ -143,8 +143,8 @@ async function renderJournalViewPage() {
           response = await journalAPI.create(data);
           if (response.ok && response.data.success) {
             currentJournalId = response.data.data._id;
-            // Update URL without reload
-            window.location.hash = `/journal/${currentJournalId}`;
+            // Update URL without reloading the page (preserves state and timers)
+            history.replaceState(null, '', `#/journal/${currentJournalId}`);
           }
         } else {
           response = await journalAPI.update(currentJournalId, data);
@@ -411,13 +411,35 @@ async function renderJournalViewPage() {
         response = await journalAPI.create(data);
         if (response.ok && response.data.success) {
           currentJournalId = response.data.data._id;
-          window.location.hash = `/journal/${currentJournalId}`;
+          
+          // DON'T navigate away - stay on same page so auto-analysis can run
+          // Just update the URL without reloading the page
+          history.replaceState(null, '', `#/journal/${currentJournalId}`);
+          
           showMessage('Journal created successfully!', 'success');
+          
+          // 🤖 Auto-trigger analysis after manual save (5 second delay)
+          console.log('⏳ Starting auto-analysis in 5 seconds after manual save...');
+          setTimeout(() => {
+            if (currentJournalId && currentJournalId !== 'new') {
+              console.log('🚀 Triggering auto-analysis...');
+              autoAnalyze();
+            }
+          }, 5000);
         }
       } else {
         response = await journalAPI.update(currentJournalId, data);
         if (response.ok) {
           showMessage('Journal updated successfully!', 'success');
+          
+          // 🤖 Auto-trigger analysis after manual save (5 second delay)
+          console.log('⏳ Starting auto-analysis in 5 seconds after manual save...');
+          setTimeout(() => {
+            if (currentJournalId && currentJournalId !== 'new') {
+              console.log('🚀 Triggering auto-analysis...');
+              autoAnalyze();
+            }
+          }, 5000);
         }
       }
     } catch (error) {
