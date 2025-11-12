@@ -43,29 +43,11 @@ app.use('/api/journals', journalRoutes);
 app.use('/api/meetings', meetingRoutes);
 app.use('/api/reminders', reminderRoutes);
 app.use('/api/calendar', calendarRoutes);
-app.use('/api/whisper', require('./routes/whisperRoutes'));
 
-// Error handling middleware (must be after routes)
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error middleware caught:', err);
-  console.error('Error stack:', err.stack);
-  
-  // Make sure we always return JSON for API routes
-  if (req.path.startsWith('/api/')) {
-    return res.status(err.status || 500).json({ 
-      success: false,
-      message: 'Something went wrong!', 
-      error: err.message,
-      data: null
-    });
-  }
-  
-  res.status(err.status || 500).json({ 
-    success: false,
-    message: 'Something went wrong!', 
-    error: err.message,
-    data: null
-  });
+  console.error(err.stack);
+  res.status(500).json({ message: 'Something went wrong!', error: err.message });
 });
 
 // Fallback to index.html for client-side routing
