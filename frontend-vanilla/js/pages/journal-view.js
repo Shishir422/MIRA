@@ -537,12 +537,36 @@ function setupSpeechToText(contentInput, showMessage) {
   if (!speechBtn) return;
 
   // Check if browser supports Speech Recognition
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  // Priority: webkitSpeechRecognition (Chrome) first, then SpeechRecognition (Edge/Safari)
+  const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+  
+  // Detect browser for better error messages
+  const isBrave = navigator.brave && navigator.brave.isBrave;
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isChrome = userAgent.includes('chrome') && !userAgent.includes('edg');
+  const isEdge = userAgent.includes('edg');
+  const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome');
   
   if (!SpeechRecognition) {
     speechBtn.disabled = true;
     speechBtn.title = 'Speech recognition not supported in this browser';
-    if (showMessage) showMessage('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.', 'error');
+    let browserMessage = 'Speech recognition is not supported in your browser.';
+    if (isBrave) {
+      browserMessage = 'Brave browser blocks Web Speech API for privacy. Please use Chrome, Edge, or Safari for speech recognition.';
+    } else if (isChrome) {
+      browserMessage = 'Speech recognition requires HTTPS or localhost. Please ensure you are using a secure connection.';
+    } else {
+      browserMessage = 'Please use Chrome, Edge, or Safari for speech recognition.';
+    }
+    if (showMessage) showMessage(browserMessage, 'error');
+    return;
+  }
+  
+  // Check if we're in a secure context (HTTPS or localhost)
+  if (!window.isSecureContext) {
+    speechBtn.disabled = true;
+    speechBtn.title = 'Speech recognition requires HTTPS or localhost';
+    if (showMessage) showMessage('Speech recognition requires a secure connection (HTTPS) or localhost. Please use HTTPS or run on localhost.', 'error');
     return;
   }
   
@@ -554,11 +578,35 @@ function setupSpeechToText(contentInput, showMessage) {
     return;
   }
 
-  // Initialize Speech Recognition
-  recognition = new SpeechRecognition();
-  recognition.continuous = true;
-  recognition.interimResults = true;
-  recognition.lang = 'en-US';
+  // Initialize Speech Recognition with proper configuration
+  try {
+    recognition = new SpeechRecognition();
+    
+    // Set properties before any other operations
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    
+    // Additional Chrome-specific settings
+    if (window.webkitSpeechRecognition) {
+      // Chrome/WebKit specific settings
+      recognition.maxAlternatives = 1;
+    }
+  } catch (error) {
+    console.error('Error initializing Speech Recognition:', error);
+    speechBtn.disabled = true;
+    speechBtn.title = 'Failed to initialize speech recognition';
+    if (showMessage) {
+      let errorMsg = 'Failed to initialize speech recognition. ';
+      if (isBrave) {
+        errorMsg += 'Brave browser blocks this feature. Please use Chrome, Edge, or Safari.';
+      } else {
+        errorMsg += 'Please check your browser settings and try again.';
+      }
+      showMessage(errorMsg, 'error');
+    }
+    return;
+  }
 
   recognition.onstart = () => {
     isRecording = true;
@@ -657,6 +705,11 @@ function setupSpeechToText(contentInput, showMessage) {
     } else if (event.error === 'network') {
       errorMessage = 'Network error: Speech recognition requires an internet connection. Please check your connection and try again.';
       statusMessage = 'Network error';
+      // For Brave, provide specific message
+      if (isBrave) {
+        errorMessage = 'Brave browser blocks Web Speech API for privacy. Please use Chrome, Edge, or Safari for speech recognition.';
+        statusMessage = 'Blocked by Brave';
+      }
     } else if (event.error === 'aborted') {
       errorMessage = 'Speech recognition was aborted.';
       statusMessage = 'Aborted';
