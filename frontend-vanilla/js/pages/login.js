@@ -40,7 +40,10 @@ function renderLoginPage() {
     </div>
   `;
 
-  let isSignup = false;
+  // Check if signup mode is requested via query parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  let isSignup = urlParams.get('signup') === 'true';
+  
   const form = document.getElementById('auth-form');
   const nameGroup = document.getElementById('name-group');
   const nameInput = document.getElementById('name-input');
@@ -50,6 +53,15 @@ function renderLoginPage() {
   const toggleBtn = document.getElementById('toggle-mode');
   const errorDiv = document.getElementById('error-message');
   const titleEl = document.getElementById('login-title');
+
+  // Initialize form state based on signup parameter
+  if (isSignup) {
+    titleEl.textContent = 'Create Account';
+    submitBtn.textContent = 'Sign Up';
+    toggleBtn.textContent = 'Already have an account? Login';
+    nameGroup.classList.remove('hidden');
+    nameInput.required = true;
+  }
 
   // Toggle between login and signup
   toggleBtn.addEventListener('click', () => {
