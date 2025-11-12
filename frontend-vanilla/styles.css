@@ -1462,6 +1462,30 @@ body::before {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.todo-due-date {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  width: 100px;
+  text-align: center;
+}
+
+.todo-due-date:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.todo-due-date::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
 .todo-due-time {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1471,7 +1495,7 @@ body::before {
   font-size: 14px;
   font-family: inherit;
   transition: all 0.2s ease;
-  min-width: 200px;
+  min-width: 120px;
 }
 
 .todo-due-time:focus {

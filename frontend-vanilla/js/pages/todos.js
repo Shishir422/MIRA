@@ -51,12 +51,23 @@ async function renderTodosPage() {
             placeholder="Add a new task..." 
             autocomplete="off"
           />
-          <input 
-            type="datetime-local" 
-            id="todo-due-time" 
-            class="todo-due-time" 
-            title="Optional: Set due time"
-          />
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <input 
+              type="text" 
+              id="todo-due-date" 
+              class="todo-due-date" 
+              placeholder="MM-DD"
+              pattern="[0-1][0-9]-[0-3][0-9]"
+              maxlength="5"
+              title="Optional: Date (MM-DD format, e.g., 11-15)"
+            />
+            <input 
+              type="time" 
+              id="todo-due-time" 
+              class="todo-due-time" 
+              title="Optional: Time"
+            />
+          </div>
           <button class="btn btn-primary" id="add-todo-btn">Add Task</button>
         </div>
       </div>
@@ -165,13 +176,16 @@ function renderTodos() {
 
 function renderTodoItem(todo, index, isCompleted) {
   const dueTimeStr = todo.dueTime 
-    ? new Date(todo.dueTime).toLocaleString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit'
-      })
+    ? (() => {
+        const date = new Date(todo.dueTime);
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = date.getHours();
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        return `${month}-${day} ${displayHours}:${minutes} ${ampm}`;
+      })()
     : '';
 
   return `
@@ -220,7 +234,26 @@ function setupTodoEventListeners() {
   // Add todo button
   const addBtn = document.getElementById('add-todo-btn');
   const todoInput = document.getElementById('todo-input');
+  const todoDueDate = document.getElementById('todo-due-date');
   const todoDueTime = document.getElementById('todo-due-time');
+
+  // Format date input as user types (MM-DD)
+  if (todoDueDate) {
+    todoDueDate.addEventListener('input', (e) => {
+      let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+      if (value.length >= 2) {
+        value = value.substring(0, 2) + '-' + value.substring(2, 4);
+      }
+      e.target.value = value;
+    });
+    
+    todoDueDate.addEventListener('keypress', (e) => {
+      // Only allow numbers
+      if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab') {
+        e.preventDefault();
+      }
+    });
+  }
 
   addBtn.addEventListener('click', async () => {
     await addTodo();
@@ -409,17 +442,48 @@ async function saveNewOrder() {
 
 async function addTodo() {
   const todoInput = document.getElementById('todo-input');
+  const todoDueDate = document.getElementById('todo-due-date');
   const todoDueTime = document.getElementById('todo-due-time');
   
   const text = todoInput.value.trim();
   if (!text) return;
 
-  const dueTime = todoDueTime.value ? new Date(todoDueTime.value).toISOString() : null;
+  // Parse date (MM-DD) and time, combine with current year
+  let dueTime = null;
+  if (todoDueDate.value || todoDueTime.value) {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    if (todoDueDate.value) {
+      // Parse MM-DD format
+      const [month, day] = todoDueDate.value.split('-').map(Number);
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        const dueDate = new Date(currentYear, month - 1, day);
+        
+        // If time is provided, add it
+        if (todoDueTime.value) {
+          const [hours, minutes] = todoDueTime.value.split(':').map(Number);
+          dueDate.setHours(hours, minutes, 0, 0);
+        } else {
+          dueDate.setHours(9, 0, 0, 0); // Default to 9 AM if no time specified
+        }
+        
+        dueTime = dueDate.toISOString();
+      }
+    } else if (todoDueTime.value) {
+      // Only time provided, use today's date
+      const dueDate = new Date();
+      const [hours, minutes] = todoDueTime.value.split(':').map(Number);
+      dueDate.setHours(hours, minutes, 0, 0);
+      dueTime = dueDate.toISOString();
+    }
+  }
 
   try {
     const response = await todoAPI.create({ text, dueTime });
     if (response.ok && response.data.success) {
       todoInput.value = '';
+      todoDueDate.value = '';
       todoDueTime.value = '';
       await loadTodos();
     } else {

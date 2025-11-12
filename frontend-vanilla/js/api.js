@@ -160,63 +160,6 @@ const calendarAPI = {
   }
 };
 
-// Whisper API (Speech-to-Text)
-const whisperAPI = {
-  async transcribe(audioFile) {
-    const token = getToken();
-    const formData = new FormData();
-    formData.append('audio', audioFile);
-
-    const headers = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/whisper/transcribe`, {
-        method: 'POST',
-        headers: headers,
-        body: formData
-      });
-
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Non-JSON response:', text.substring(0, 200));
-        return {
-          ok: false,
-          status: response.status,
-          data: {
-            success: false,
-            message: `Server returned non-JSON response. Status: ${response.status}`,
-            data: null
-          }
-        };
-      }
-
-      const data = await response.json();
-      
-      return {
-        ok: response.ok,
-        status: response.status,
-        data: data
-      };
-    } catch (error) {
-      console.error('Whisper API error:', error);
-      return {
-        ok: false,
-        status: 500,
-        data: {
-          success: false,
-          message: error.message || 'Network error',
-          data: null
-        }
-      };
-    }
-  }
-};
-
 // Todo API
 const todoAPI = {
   async getAll() {
