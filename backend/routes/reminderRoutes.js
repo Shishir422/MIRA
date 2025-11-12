@@ -5,7 +5,8 @@ const {
   confirmReminder,
   getReminders,
   deleteReminder,
-  syncToGoogleCalendar
+  syncToGoogleCalendar,
+  toggleComplete
 } = require('../controllers/reminderController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -13,6 +14,7 @@ const { protect } = require('../middleware/authMiddleware');
 router.post('/propose', protect, proposeReminder);
 router.post('/:id/confirm', protect, confirmReminder);
 router.post('/:id/sync-to-calendar', protect, syncToGoogleCalendar);
+router.put('/:id/toggle-complete', protect, toggleComplete);
 router.get('/', protect, getReminders);
 router.delete('/:id', protect, deleteReminder);
 

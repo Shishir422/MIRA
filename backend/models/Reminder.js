@@ -27,7 +27,7 @@ const reminderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['proposed', 'confirmed', 'synced', 'cancelled'],
+    enum: ['proposed', 'confirmed', 'synced', 'cancelled', 'completed'],
     default: 'proposed'
   },
   googleCalendarEventId: {

@@ -242,10 +242,61 @@ const syncToGoogleCalendar = async (req, res) => {
   }
 };
 
+// @desc    Toggle completion status of a reminder
+// @route   PUT /api/reminders/:id/toggle-complete
+// @access  Private
+const toggleComplete = async (req, res) => {
+  try {
+    const reminder = await Reminder.findById(req.params.id);
+
+    if (!reminder) {
+      return res.status(404).json({
+        success: false,
+        message: 'Reminder not found',
+        data: null
+      });
+    }
+
+    if (reminder.userId.toString() !== req.userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized',
+        data: null
+      });
+    }
+
+    // Toggle between completed and confirmed/synced
+    if (reminder.status === 'completed') {
+      // If it was synced before, restore to synced, otherwise to confirmed
+      reminder.status = reminder.googleCalendarEventId ? 'synced' : 'confirmed';
+    } else {
+      // Mark as completed
+      reminder.status = 'completed';
+    }
+
+    await reminder.save();
+
+    res.json({
+      success: true,
+      message: reminder.status === 'completed' 
+        ? 'Event marked as completed' 
+        : 'Event marked as not completed',
+      data: reminder
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+      data: null
+    });
+  }
+};
+
 module.exports = {
   proposeReminder,
   confirmReminder,
   getReminders,
   deleteReminder,
-  syncToGoogleCalendar
+  syncToGoogleCalendar,
+  toggleComplete
 };
