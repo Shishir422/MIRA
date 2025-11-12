@@ -36,19 +36,30 @@ const syncRemindersToCalendar = async (userId, aiReminders) => {
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
+    // Get user's timezone (default to Asia/Kolkata if not set)
+    const userTimezone = user.timezone || 'Asia/Kolkata';
+    console.log(`🌍 Using timezone: ${userTimezone} for calendar events`);
+
     for (const reminderData of aiReminders) {
       try {
+        const startTime = reminderData.eventDate.toISOString();
+        const endTime = new Date(reminderData.eventDate.getTime() + 60 * 60 * 1000).toISOString();
+        
+        console.log(`📅 Calendar Event: "${reminderData.title}"`);
+        console.log(`   Start: ${startTime} (timezone: ${userTimezone})`);
+        console.log(`   End: ${endTime} (timezone: ${userTimezone})`);
+        
         // Create calendar event
         const calendarEvent = {
           summary: reminderData.title,
           description: reminderData.description || reminderData.aiMetadata?.preparationNotes || 'From MIRA Journal',
           start: {
-            dateTime: reminderData.eventDate.toISOString(),
-            timeZone: 'UTC',
+            dateTime: startTime,
+            timeZone: userTimezone,  // Use user's timezone instead of UTC
           },
           end: {
-            dateTime: new Date(reminderData.eventDate.getTime() + 60 * 60 * 1000).toISOString(), // 1 hour duration
-            timeZone: 'UTC',
+            dateTime: endTime, // 1 hour duration
+            timeZone: userTimezone,  // Use user's timezone instead of UTC
           },
           reminders: {
             useDefault: false,
@@ -127,8 +138,16 @@ const createJournal = async (req, res) => {
 // @access  Private
 const getJournals = async (req, res) => {
   try {
-    const journals = await Journal.find({ userId: req.userId }).sort({ date: -1 });
-    res.json({ success: true, message: 'Journals retrieved successfully', data: journals });
+    // Sort by createdAt ascending (oldest first) so we can number them properly
+    const journals = await Journal.find({ userId: req.userId }).sort({ createdAt: 1 });
+    
+    // Add sequential numbers to each journal
+    const journalsWithNumbers = journals.map((journal, index) => ({
+      ...journal.toObject(),
+      journalNumber: index + 1
+    }));
+    
+    res.json({ success: true, message: 'Journals retrieved successfully', data: journalsWithNumbers });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message, data: null });
   }

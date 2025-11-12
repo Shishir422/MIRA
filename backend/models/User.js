@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema({
   googleAccessToken: {
     type: String,
     default: null
+  },
+  timezone: {
+    type: String,
+    default: 'Asia/Kolkata'  // Default to IST, will be detected from browser
   }
 }, {
   timestamps: true  // Automatically adds createdAt and updatedAt

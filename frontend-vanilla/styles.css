@@ -607,6 +607,7 @@ body::before {
   border: 1px solid var(--glass-border);
   cursor: pointer;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .journal-card:hover {
@@ -615,11 +616,25 @@ body::before {
   border-color: rgba(255, 255, 255, 0.15);
 }
 
+.journal-number {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
 .journal-card-title {
   font-size: 20px;
   font-weight: 700;
   margin-bottom: 12px;
   color: #f3f4f6;
+  padding-right: 50px; /* Make room for the number badge */
 }
 
 .journal-card-preview {

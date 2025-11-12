@@ -102,6 +102,11 @@ async function renderJournalViewPage() {
         // Load existing analysis if available
         if (journal.analysis) {
           renderAnalysis(journal.analysis);
+          // Store in localStorage for debugging
+          localStorage.setItem('lastAnalysis', JSON.stringify(journal.analysis));
+          console.log('📊 Loaded stored analysis from database');
+        } else {
+          console.log('ℹ️ No stored analysis for this journal');
         }
       }
     } catch (error) {
@@ -120,6 +125,12 @@ async function renderJournalViewPage() {
       if (initialLoad) {
         initialLoad = false;
         console.log('⏭️ Skipping auto-save (initial load)');
+        return;
+      }
+
+      // 🚫 DISABLE auto-save for NEW journals - only save when user clicks "Save Journal" button
+      if (isNew || currentJournalId === 'new') {
+        console.log('⏭️ Skipping auto-save (new journal - manual save only)');
         return;
       }
 
@@ -168,19 +179,33 @@ async function renderJournalViewPage() {
     
     // Add fresh event listeners to cloned elements (no need to remove - elements are brand new)
     titleInput.addEventListener('input', function handleTitleInput() {
-      console.log('📝 Title changed - auto-save in 2s');
       hasUnsavedChanges = true;
+      
+      // 🚫 DISABLE auto-save for NEW journals - only save when user clicks "Save Journal" button
+      if (isNew || currentJournalId === 'new') {
+        console.log('📝 Title changed - auto-save DISABLED (new journal - manual save only)');
+        return;
+      }
+      
+      console.log('📝 Title changed - auto-save in 2s');
       clearTimeout(autoSaveTimer);
       autoSaveTimer = setTimeout(autoSave, 2000);
     });
 
     contentInput.addEventListener('input', function handleContentInput() {
-      console.log('📝 Content changed - auto-save in 2s, auto-analyze in 5s');
       hasUnsavedChanges = true;
+      
+      // 🚫 DISABLE auto-save for NEW journals - only save when user clicks "Save Journal" button
+      if (isNew || currentJournalId === 'new') {
+        console.log('📝 Content changed - auto-save & auto-analyze DISABLED (new journal - manual save only)');
+        return;
+      }
+      
+      console.log('📝 Content changed - auto-save in 2s, auto-analyze in 5s');
       clearTimeout(autoSaveTimer);
       autoSaveTimer = setTimeout(autoSave, 2000);
       
-      // Trigger auto-analyze after 5 seconds
+      // Trigger auto-analyze after 5 seconds (ONLY for existing journals)
       clearTimeout(autoAnalyzeTimer);
       autoAnalyzeTimer = setTimeout(autoAnalyze, 5000);
     });
@@ -207,6 +232,11 @@ async function renderJournalViewPage() {
       
       if (response.ok && response.data.success) {
         console.log('✅ Analysis successful:', response.data.data);
+        
+        // Store analysis in localStorage
+        localStorage.setItem('lastAnalysis', JSON.stringify(response.data.data));
+        console.log('💾 Analysis saved to localStorage');
+        
         renderAnalysis(response.data.data);
         
         // Show success message if reminders were created
@@ -493,8 +523,9 @@ async function renderJournalViewPage() {
   }, 500);
 }
 
-// Speech-to-Text functionality using Web Speech API
-let recognition = null;
+// Speech-to-Text functionality using Whisper API
+let mediaRecorder = null;
+let audioChunks = [];
 let isRecording = false;
 
 function setupSpeechToText(contentInput, showMessage) {
@@ -504,200 +535,154 @@ function setupSpeechToText(contentInput, showMessage) {
   
   if (!speechBtn) return;
 
-  // Check if browser supports Speech Recognition
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  
-  if (!SpeechRecognition) {
-    speechBtn.disabled = true;
-    speechBtn.title = 'Speech recognition not supported in this browser';
-    if (showMessage) showMessage('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.', 'error');
-    return;
+  speechBtn.addEventListener('click', async () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      await startRecording();
+    }
+  });
+
+  async function startRecording() {
+    try {
+      // Check for OpenAI API key
+      let apiKey = localStorage.getItem('openai_api_key');
+      if (!apiKey) {
+        apiKey = prompt('Please enter your OpenAI API key to use speech-to-text:\n\n(Your key will be stored locally in your browser)');
+        if (!apiKey || !apiKey.trim()) {
+          if (showMessage) showMessage('API key is required for speech-to-text', 'error');
+          return;
+        }
+        localStorage.setItem('openai_api_key', apiKey.trim());
+      }
+
+      // Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+        await transcribeAudio();
+      };
+
+      mediaRecorder.start();
+      isRecording = true;
+      
+      micIcon.textContent = '⏹️';
+      micStatus.textContent = 'Recording...';
+      speechBtn.classList.add('recording');
+      if (showMessage) showMessage('Recording started. Click again to stop.', 'success');
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        if (showMessage) showMessage('Microphone permission denied. Please allow microphone access.', 'error');
+      } else {
+        if (showMessage) showMessage('Failed to start recording: ' + error.message, 'error');
+      }
+    }
   }
 
-  // Initialize Speech Recognition
-  recognition = new SpeechRecognition();
-  recognition.continuous = true;
-  recognition.interimResults = true;
-  recognition.lang = 'en-US';
-
-  let finalTranscript = '';
-  let interimTranscript = '';
-  let insertedTextLength = 0; // Track how much text we've already inserted
-
-  recognition.onstart = () => {
-    isRecording = true;
-    finalTranscript = '';
-    interimTranscript = '';
-    insertedTextLength = 0;
-    
-    // Store the cursor position and text before starting
-    const cursorPos = contentInput.selectionStart;
-    const textBefore = contentInput.value.substring(0, cursorPos);
-    const textAfter = contentInput.value.substring(cursorPos);
-    
-    // Store these for later use
-    contentInput.dataset.speechStartPos = cursorPos;
-    contentInput.dataset.speechTextBefore = textBefore;
-    contentInput.dataset.speechTextAfter = textAfter;
-    
-    micIcon.textContent = '⏹️';
-    micStatus.textContent = 'Listening...';
-    speechBtn.classList.add('recording');
-    if (showMessage) showMessage('Speech recognition started. Speak now!', 'success');
-  };
-
-  recognition.onresult = (event) => {
-    // Process all results since last event
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const transcript = event.results[i][0].transcript;
-      if (event.results[i].isFinal) {
-        // Add to final transcript
-        finalTranscript += transcript + ' ';
-        interimTranscript = ''; // Clear interim when we get final
-      } else {
-        // Update interim transcript
-        interimTranscript = transcript;
-      }
-    }
-    
-    // Get the stored insertion point
-    const startPos = parseInt(contentInput.dataset.speechStartPos || 0);
-    const textBefore = contentInput.dataset.speechTextBefore || '';
-    const textAfter = contentInput.dataset.speechTextAfter || '';
-    
-    // Calculate what text we've already inserted (to avoid duplicates)
-    const currentValue = contentInput.value;
-    const beforeLength = textBefore.length;
-    const afterLength = textAfter.length;
-    const currentInsertedLength = currentValue.length - beforeLength - afterLength;
-    
-    // Combine final and interim transcripts
-    const fullTranscript = (finalTranscript + interimTranscript).trim();
-    
-    // Reconstruct the textarea value
-    const separator = textBefore.trim() && !textBefore.endsWith(' ') ? ' ' : '';
-    const newValue = textBefore + separator + fullTranscript + textAfter;
-    
-    // Only update if something changed
-    if (newValue !== currentValue) {
-      contentInput.value = newValue;
+  function stopRecording() {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      isRecording = false;
       
-      // Update cursor position to end of inserted text
-      const newCursorPos = textBefore.length + separator.length + fullTranscript.length;
+      micIcon.textContent = '🎤';
+      micStatus.textContent = 'Processing...';
+      speechBtn.classList.remove('recording');
+      speechBtn.disabled = true;
+    }
+  }
+
+  async function transcribeAudio() {
+    try {
+      const micStatus = document.getElementById('mic-status');
+      micStatus.textContent = 'Transcribing...';
+      
+      // Convert audio chunks to blob
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      
+      // Convert to file format for OpenAI API
+      const file = new File([audioBlob], 'recording.webm', { type: 'audio/webm' });
+      
+      // Create FormData
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('model', 'whisper-1');
+      formData.append('language', 'en'); // Optional: specify language
+      
+      // Get API key
+      const apiKey = localStorage.getItem('openai_api_key');
+      
+      // Call OpenAI Whisper API
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const transcribedText = data.text;
+      
+      // Insert transcribed text into textarea
+      const currentText = contentInput.value;
+      const cursorPos = contentInput.selectionStart;
+      const textBefore = currentText.substring(0, cursorPos);
+      const textAfter = currentText.substring(cursorPos);
+      
+      // Add space if there's text before
+      const separator = textBefore.trim() && !textBefore.endsWith(' ') ? ' ' : '';
+      contentInput.value = textBefore + separator + transcribedText + textAfter;
+      
+      // Set cursor position after inserted text
+      const newCursorPos = cursorPos + separator.length + transcribedText.length;
       contentInput.setSelectionRange(newCursorPos, newCursorPos);
       
-      // Trigger input event to activate auto-save (but throttle it)
-      if (!contentInput._speechInputTimeout) {
-        contentInput._speechInputTimeout = setTimeout(() => {
-          contentInput.dispatchEvent(new Event('input', { bubbles: true }));
-          contentInput._speechInputTimeout = null;
-        }, 500); // Throttle to every 500ms
-      }
-    }
-    
-    // Show status
-    if (interimTranscript) {
-      micStatus.textContent = `Listening: ${interimTranscript.substring(0, 40)}...`;
-    } else if (finalTranscript) {
-      micStatus.textContent = '✓ Transcribed';
-    }
-  };
-
-  recognition.onerror = (event) => {
-    console.error('Speech recognition error:', event.error);
-    isRecording = false;
-    micIcon.textContent = '🎤';
-    micStatus.textContent = '❌ Error';
-    speechBtn.classList.remove('recording');
-    speechBtn.disabled = false;
-    
-    let errorMessage = 'Speech recognition error';
-    if (event.error === 'no-speech') {
-      errorMessage = 'No speech detected. Please try again.';
-    } else if (event.error === 'audio-capture') {
-      errorMessage = 'No microphone found. Please check your microphone.';
-    } else if (event.error === 'not-allowed') {
-      errorMessage = 'Microphone permission denied. Please allow microphone access.';
-    } else {
-      errorMessage = `Speech recognition error: ${event.error}`;
-    }
-    
-    if (showMessage) showMessage(errorMessage, 'error');
-    
-    setTimeout(() => {
-      micStatus.textContent = '';
-    }, 3000);
-  };
-
-  recognition.onend = () => {
-    // Clear any pending input timeout
-    if (contentInput._speechInputTimeout) {
-      clearTimeout(contentInput._speechInputTimeout);
-      contentInput._speechInputTimeout = null;
-    }
-    
-    // Final update with any remaining interim text
-    if (interimTranscript.trim() && !finalTranscript.includes(interimTranscript)) {
-      finalTranscript += interimTranscript + ' ';
-      interimTranscript = '';
-    }
-    
-    isRecording = false;
-    micIcon.textContent = '🎤';
-    speechBtn.classList.remove('recording');
-    speechBtn.disabled = false;
-    
-    // Final update to textarea
-    if (finalTranscript.trim()) {
-      const startPos = parseInt(contentInput.dataset.speechStartPos || 0);
-      const textBefore = contentInput.dataset.speechTextBefore || '';
-      const textAfter = contentInput.dataset.speechTextAfter || '';
-      
-      const separator = textBefore.trim() && !textBefore.endsWith(' ') ? ' ' : '';
-      const textToInsert = finalTranscript.trim();
-      const finalValue = textBefore + separator + textToInsert + textAfter;
-      
-      if (contentInput.value !== finalValue) {
-        contentInput.value = finalValue;
-        
-        const newCursorPos = textBefore.length + separator.length + textToInsert.length;
-        contentInput.setSelectionRange(newCursorPos, newCursorPos);
-      }
-      
-      // Trigger final input event for auto-save
+      // Trigger input event to activate auto-save
       contentInput.dispatchEvent(new Event('input', { bubbles: true }));
       
       micStatus.textContent = '✓ Transcribed';
+      speechBtn.disabled = false;
       if (showMessage) showMessage('Speech transcribed successfully!', 'success');
       
+      // Reset status after 2 seconds
       setTimeout(() => {
         micStatus.textContent = '';
       }, 2000);
-    } else {
-      micStatus.textContent = '';
-    }
-    
-    // Clean up stored data
-    delete contentInput.dataset.speechStartPos;
-    delete contentInput.dataset.speechTextBefore;
-    delete contentInput.dataset.speechTextAfter;
-  };
-
-  speechBtn.addEventListener('click', () => {
-    if (isRecording) {
-      // Stop recording
-      recognition.stop();
-    } else {
-      // Start recording
-      try {
-        finalTranscript = '';
-        recognition.start();
-      } catch (error) {
-        console.error('Error starting speech recognition:', error);
-        if (showMessage) showMessage('Failed to start speech recognition: ' + error.message, 'error');
+      
+    } catch (error) {
+      console.error('Error transcribing audio:', error);
+      micStatus.textContent = '❌ Error';
+      speechBtn.disabled = false;
+      
+      if (error.message.includes('API key') || error.message.includes('401')) {
+        localStorage.removeItem('openai_api_key');
+        if (showMessage) showMessage('Invalid API key. Please try again.', 'error');
+      } else {
+        if (showMessage) showMessage('Failed to transcribe: ' + error.message, 'error');
       }
+      
+      setTimeout(() => {
+        micStatus.textContent = '';
+      }, 3000);
     }
-  });
+  }
 }
 
 // Register route

@@ -128,21 +128,30 @@ CRITICAL RULES (MUST FOLLOW):
 1. ONLY extract events that are EXPLICITLY MENTIONED in the journal text below
 2. DO NOT invent, assume, or hallucinate any events
 3. ONLY extract events with SPECIFIC future dates (like "tomorrow", "December 12", "next Monday", "on Friday")
-4. IGNORE vague mentions like "I have a test" without a specific date
+4. For vague dates like "on the 25th" without a month, use the CURRENT or NEXT month based on context
 5. IGNORE past events (things already happened like "I went to", "I had", "I attended")
 6. If NO events with specific dates exist in the journal, return an empty array []
+7. When extracting dates, if month is not specified but day is (e.g., "on the 25th"), assume the CURRENT month if day hasn't passed, otherwise NEXT month
 
 JOURNAL TEXT (DO NOT ADD ANYTHING NOT IN THIS TEXT):
 ${content}
+
+DATE PARSING EXAMPLES:
+- TODAY is ${todayStr}
+- "meeting on December 25" → "2025-12-25" ✓
+- "demo on the 25th" (and today is Nov 12) → "2025-11-25" (current month) ✓
+- "appointment on the 5th" (and today is Nov 12) → "2025-12-05" (next month, Dec) ✓
+- "tomorrow" → next day after ${todayStr} ✓
 
 Examples of what to INCLUDE:
 - "I have a meeting on December 12 at 3pm" ✓
 - "dentist appointment tomorrow at 10am" ✓
 - "deadline next Friday" ✓
+- "preparing for the demo on the 25th" ✓
 
 Examples of what to EXCLUDE:
 - "I have a test" (no specific date) ✗
-- "the test is on Friday" (too vague) ✗
+- "the test is on Friday" (too vague, which Friday?) ✗
 - "I went to the doctor" (past tense) ✗
 - "This is testing for bugs" (no event at all) ✗
 - "checking the program" (no event at all) ✗
@@ -430,14 +439,67 @@ async function createRemindersWithAI(detectedEvents, journalContent, userHistory
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(`📥 Input: ${detectedEvents.length} detected events`);
     console.log(`🧠 User Context: ${userHistory.recentJournals?.length || 0} recent journals, ${userHistory.existingReminders?.length || 0} existing reminders`);
-    console.log('📋 Events to analyze:', JSON.stringify(detectedEvents.map(e => {
+    
+    // 🛡️ PRE-FILTER: Check for obvious duplicates before AI analysis
+    const existingReminders = userHistory.existingReminders || [];
+    const eventsAfterPreFilter = detectedEvents.map(event => {
+      const eventDate = new Date(event.date);
+      const eventDateOnly = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const eventTitleLower = (event.title || '').toLowerCase().trim();
+      
+      // Check against existing reminders
+      for (const reminder of existingReminders) {
+        const reminderDate = new Date(reminder.eventDate);
+        const reminderDateOnly = reminderDate.toISOString().split('T')[0];
+        const reminderTitleLower = (reminder.title || '').toLowerCase().trim();
+        
+        // Same date check
+        if (eventDateOnly === reminderDateOnly) {
+          // Check for semantic similarity in titles
+          // Remove common words like "the", "a", "an", "for", "on", "at", "preparing", "working"
+          const cleanEvent = eventTitleLower.replace(/\b(the|a|an|for|on|at|preparing|working|getting ready|been|also|still)\b/g, '').trim();
+          const cleanReminder = reminderTitleLower.replace(/\b(the|a|an|for|on|at|preparing|working|getting ready|been|also|still)\b/g, '').trim();
+          
+          // Check if one title contains the other (handles "client demo" vs "preparing for client demo")
+          if (cleanEvent.includes(cleanReminder) || cleanReminder.includes(cleanEvent) || cleanEvent === cleanReminder) {
+            console.log(`🚫 PRE-FILTER: Duplicate detected - "${event.title}" matches existing "${reminder.title}" on ${eventDateOnly}`);
+            return { ...event, isPreFilteredDuplicate: true, matchedReminder: reminder };
+          }
+          
+          // Check for word overlap (at least 60% of words match)
+          const eventWords = cleanEvent.split(/\s+/).filter(w => w.length > 2);
+          const reminderWords = cleanReminder.split(/\s+/).filter(w => w.length > 2);
+          
+          if (eventWords.length > 0 && reminderWords.length > 0) {
+            const commonWords = eventWords.filter(word => reminderWords.includes(word));
+            const overlapPercentage = (commonWords.length / Math.min(eventWords.length, reminderWords.length)) * 100;
+            
+            if (overlapPercentage >= 60) {
+              console.log(`🚫 PRE-FILTER: Duplicate detected (${overlapPercentage.toFixed(0)}% overlap) - "${event.title}" matches "${reminder.title}" on ${eventDateOnly}`);
+              return { ...event, isPreFilteredDuplicate: true, matchedReminder: reminder };
+            }
+          }
+        }
+      }
+      
+      return event;
+    });
+    
+    // Count how many were filtered
+    const preFilteredCount = eventsAfterPreFilter.filter(e => e.isPreFilteredDuplicate).length;
+    if (preFilteredCount > 0) {
+      console.log(`✅ PRE-FILTER: Removed ${preFilteredCount} obvious duplicate(s) before AI analysis`);
+    }
+    
+    console.log('📋 Events to analyze:', JSON.stringify(eventsAfterPreFilter.map(e => {
       const eventDate = new Date(e.date);
       const dateOnly = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD
       return {
         title: e.title,
         dateOnly: dateOnly,
         fullDate: e.date,
-        type: e.type
+        type: e.type,
+        preFiltered: e.isPreFilteredDuplicate || false
       };
     }), null, 2));
     console.log('🧠 Sending to Llama3 AI with user history for intelligent decision-making...');
@@ -471,7 +533,7 @@ CURRENT JOURNAL ENTRY:
 ${journalContent}
 
 DETECTED EVENTS IN THIS ENTRY (with dates for comparison):
-${JSON.stringify(detectedEvents.map(e => {
+${JSON.stringify(eventsAfterPreFilter.filter(e => !e.isPreFilteredDuplicate).map(e => {
   const eventDate = new Date(e.date);
   const dateOnly = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD for easy comparison
   return {
@@ -482,6 +544,12 @@ ${JSON.stringify(detectedEvents.map(e => {
     type: e.type
   };
 }), null, 2)}
+
+${preFilteredCount > 0 ? `\nPRE-FILTERED DUPLICATES (already detected as duplicates, DO NOT create reminders for these):\n${eventsAfterPreFilter.filter(e => e.isPreFilteredDuplicate).map((e, i) => {
+  const eventDate = new Date(e.date);
+  const dateOnly = eventDate.toISOString().split('T')[0];
+  return `${i + 1}. "${e.title}" on ${dateOnly} - DUPLICATE of existing "${e.matchedReminder.title}"`;
+}).join('\n')}` : ''}
 
 YOUR TASK AS AN AGENTIC AI:
 1. **CRITICAL FIRST STEP: Check for duplicates** - Compare each detected event with EXISTING REMINDERS
@@ -509,10 +577,13 @@ DECISION CRITERIA:
 DUPLICATE DETECTION RULES (CRITICAL - READ CAREFULLY):
 - Compare event titles (case-insensitive, ignore minor wording differences)
 - Compare dates ONLY (Year-Month-Day), IGNORE time differences!
+- ANY mention of same event on same date = DUPLICATE, even if wording is slightly different
+- "preparing for client demo" = "client demo" = "demo with client" (SAME EVENT!)
 - "Client demo" on Nov 25 at 3pm is DUPLICATE of "Client demo" on Nov 25 at 9am (SAME DAY!)
 - "Dentist appointment on Nov 19" is DUPLICATE of reminder "Dentist" or "Dentist appointment" on Nov 19
 - "Team meeting tomorrow" is DUPLICATE if reminder "Team meeting" or "Standup meeting" exists for tomorrow
 - Semantically similar titles on same date = DUPLICATE (e.g., "dentist" and "dental appointment")
+- "preparing for X", "working on X", "getting ready for X" = DUPLICATE if "X" reminder exists on same date
 - When in doubt about duplicates, set shouldCreate: false
 
 EXAMPLES:
@@ -520,6 +591,11 @@ Example 1 - DUPLICATE (same title, same day, different times):
   Detected: "Client demo" on 2025-11-25T09:00:00.000Z (9am)
   Existing: "Client demo" on 2025-11-25T15:00:00.000Z (3pm)
   Decision: shouldCreate: false (DUPLICATE - same title, same DATE, ignore time difference!)
+  
+Example 1B - DUPLICATE (preparing for same event):
+  Detected: "preparing for the client demo" on 2025-11-25 at 9am
+  Existing: "Client demo" on 2025-11-25 at 3pm
+  Decision: shouldCreate: false (DUPLICATE - same event "client demo", same date!)
   
 Example 2 - DUPLICATE (similar titles, same day):
   Detected: "Dentist" on 2025-11-19T14:00:00.000Z
@@ -665,13 +741,20 @@ Respond with JSON only:`;
 
     // Filter: Only keep reminders where AI decided shouldCreate is true
     const approvedReminders = aiDecision.reminders.filter(reminder => reminder.shouldCreate === true);
+    
+    // Calculate actual counts including pre-filtered duplicates
+    const totalDetectedEvents = detectedEvents.length;
+    const nonDuplicateEvents = eventsAfterPreFilter.filter(e => !e.isPreFilteredDuplicate).length;
+    const totalRejected = totalDetectedEvents - approvedReminders.length;
 
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('🤖 AI DECISION COMPLETE (WITH MEMORY)');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`📊 AI analyzed: ${detectedEvents.length} events`);
+    console.log(`📊 Total detected events: ${totalDetectedEvents}`);
+    console.log(`🛡️ Pre-filtered duplicates: ${preFilteredCount}`);
+    console.log(`🤖 AI analyzed: ${nonDuplicateEvents} events`);
     console.log(`✅ AI approved: ${approvedReminders.length} reminders`);
-    console.log(`❌ AI rejected: ${detectedEvents.length - approvedReminders.length} events`);
+    console.log(`❌ Total rejected: ${totalRejected} events (${preFilteredCount} pre-filtered + ${totalRejected - preFilteredCount} AI rejected)`);
     console.log(`💬 AI Response to User: "${aiDecision.aiResponse}"`);
     console.log(`🧠 AI Reasoning: "${aiDecision.reasoning}"`);
     

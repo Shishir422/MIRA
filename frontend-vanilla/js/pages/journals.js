@@ -88,6 +88,7 @@ async function renderJournalsPage() {
           <div class="journals-grid">
             ${journals.map(journal => `
               <div class="journal-card" onclick="navigateTo('/journal/${journal._id}')">
+                <div class="journal-number">#${journal.journalNumber}</div>
                 <h3 class="journal-card-title">${journal.title || 'Untitled Entry'}</h3>
                 <p class="journal-card-preview">${journal.content.substring(0, 150)}${journal.content.length > 150 ? '...' : ''}</p>
                 <p class="journal-card-date">${new Date(journal.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>

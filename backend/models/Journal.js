@@ -30,6 +30,19 @@ const journalSchema = new mongoose.Schema({
   insights: {
     type: String,
     default: null  // AI generated later
+  },
+  analysis: {
+    type: Object,
+    default: null  // AI analysis results (productive, unproductive, rest, etc.)
+  },
+  analysisStatus: {
+    type: String,
+    enum: ['pending', 'ready', 'failed'],
+    default: null
+  },
+  analysisAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true  // Automatically adds createdAt and updatedAt
