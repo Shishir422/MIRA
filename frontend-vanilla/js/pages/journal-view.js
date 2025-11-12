@@ -799,22 +799,61 @@ function setupSpeechToText(contentInput, showMessage) {
         return;
       }
       
+      // Check if Brave (which blocks Web Speech API)
+      if (isBrave) {
+        if (showMessage) showMessage('Brave browser blocks Web Speech API for privacy. Please use Chrome, Edge, or Safari for speech recognition.', 'error');
+        return;
+      }
+      
       // Start recording
       try {
         finalTranscript = '';
         interimTranscript = '';
+        
+        // Ensure recognition object is still valid
+        if (!recognition) {
+          throw new Error('Speech recognition not initialized');
+        }
+        
+        // Check if already running (Chrome sometimes needs this check)
+        if (isRecording) {
+          recognition.stop();
+          // Wait a bit before restarting
+          setTimeout(() => {
+            try {
+              recognition.start();
+            } catch (e) {
+              console.error('Error restarting recognition:', e);
+              if (showMessage) showMessage('Error restarting speech recognition. Please try again.', 'error');
+            }
+          }, 100);
+          return;
+        }
+        
         recognition.start();
       } catch (error) {
         console.error('Error starting speech recognition:', error);
         let errorMsg = 'Failed to start speech recognition. ';
-        if (error.message && error.message.includes('already started')) {
+        
+        if (isBrave) {
+          errorMsg = 'Brave browser blocks Web Speech API for privacy. Please use Chrome, Edge, or Safari for speech recognition.';
+        } else if (error.message && error.message.includes('already started')) {
           errorMsg += 'Recognition is already running.';
         } else if (!navigator.onLine) {
           errorMsg += 'Internet connection required.';
+        } else if (error.message && error.message.includes('not initialized')) {
+          errorMsg += 'Speech recognition not initialized. Please refresh the page.';
         } else {
           errorMsg += error.message || 'Please check your internet connection and microphone permissions.';
         }
+        
         if (showMessage) showMessage(errorMsg, 'error');
+        
+        // Reset UI state
+        isRecording = false;
+        micIcon.textContent = '🎤';
+        speechBtn.classList.remove('recording');
+        micStatus.textContent = '';
       }
     }
   });
