@@ -124,40 +124,43 @@ async function detectEventsWithLlama(content) {
 
 TODAY'S DATE: ${todayStr}
 
-STRICT RULES:
-1. ONLY extract events that have a SPECIFIC future date mentioned (like "tomorrow", "December 12", "next Monday", "on Friday")
-2. IGNORE vague mentions like "I have a test" without a specific date
-3. IGNORE past events (things already happened like "I went to", "I had", "I attended")
-4. ONLY extract: meetings, appointments, deadlines, scheduled events
-5. Must have either a specific date OR a clear time indicator (tomorrow, next week, etc.)
+CRITICAL RULES (MUST FOLLOW):
+1. ONLY extract events that are EXPLICITLY MENTIONED in the journal text below
+2. DO NOT invent, assume, or hallucinate any events
+3. ONLY extract events with SPECIFIC future dates (like "tomorrow", "December 12", "next Monday", "on Friday")
+4. IGNORE vague mentions like "I have a test" without a specific date
+5. IGNORE past events (things already happened like "I went to", "I had", "I attended")
+6. If NO events with specific dates exist in the journal, return an empty array []
 
-JOURNAL:
+JOURNAL TEXT (DO NOT ADD ANYTHING NOT IN THIS TEXT):
 ${content}
 
-Examples to INCLUDE:
+Examples of what to INCLUDE:
 - "I have a meeting on December 12 at 3pm" ✓
 - "dentist appointment tomorrow at 10am" ✓
 - "deadline next Friday" ✓
-- "presentation on Monday" ✓
 
-Examples to EXCLUDE:
+Examples of what to EXCLUDE:
 - "I have a test" (no specific date) ✗
-- "the test is on Friday" (too vague, which Friday?) ✗
+- "the test is on Friday" (too vague) ✗
 - "I went to the doctor" (past tense) ✗
-- "I should study" (not an event) ✗
+- "This is testing for bugs" (no event at all) ✗
+- "checking the program" (no event at all) ✗
+
+IMPORTANT: If the journal is just casual writing with NO scheduled events, return []
 
 Respond with ONLY a JSON array:
 [
   {
-    "title": "Event name",
+    "title": "Event name (must be from journal text)",
     "date": "YYYY-MM-DD or 'tomorrow' or 'next Monday'",
-    "time": "10:00am" or "14:30" or "10am" or null (extract exact time mentioned),
+    "time": "10:00am" or null,
     "type": "meeting/appointment/deadline",
-    "context": "Exact sentence from journal"
+    "context": "EXACT sentence from journal where event was mentioned"
   }
 ]
 
-Return [] if NO future events with specific dates found.`;
+Return [] if NO future events found.`;
 
     const response = await ollama.chat({
       model: 'llama3',
@@ -165,7 +168,7 @@ Return [] if NO future events with specific dates found.`;
       stream: false,
       format: 'json',
       options: {
-        temperature: 0.1, // Lower temperature for more precise extraction
+        temperature: 0.05, // VERY low temperature to reduce hallucinations
       }
     });
 
@@ -189,6 +192,35 @@ Return [] if NO future events with specific dates found.`;
     }
     
     if (!Array.isArray(events)) return [];
+
+    // 🛡️ CRITICAL VALIDATION: Filter out hallucinated events
+    // Only keep events where the context/title actually appears in the journal
+    const contentLower = content.toLowerCase();
+    events = events.filter(event => {
+      // Check if event title or context appears in the journal
+      const titleLower = (event.title || '').toLowerCase();
+      const contextLower = (event.context || '').toLowerCase();
+      
+      // Event is valid if:
+      // 1. Title appears in journal, OR
+      // 2. Context appears in journal, OR
+      // 3. At least 3 words from context appear in journal (partial match)
+      if (contentLower.includes(titleLower) || contentLower.includes(contextLower)) {
+        return true;
+      }
+      
+      // Partial match: Check if at least 3 words from context are in journal
+      const contextWords = contextLower.split(' ').filter(w => w.length > 3);
+      const matchingWords = contextWords.filter(word => contentLower.includes(word));
+      
+      if (matchingWords.length >= 3) {
+        return true;
+      }
+      
+      // If no match found, this is likely a hallucination
+      console.warn(`🚫 Filtered out hallucinated event: "${event.title}" - not found in journal`);
+      return false;
+    });
 
     // Convert relative dates to ISO format for Google Calendar integration
     const now = new Date();
@@ -285,6 +317,13 @@ Return [] if NO future events with specific dates found.`;
       const eventDateTime = new Date(event.date);
       return eventDateTime > now; // Must be in the future
     });
+
+    // 🔍 Final validation log
+    if (events.length === 0) {
+      console.log('ℹ️ No future events detected in journal');
+    } else {
+      console.log(`✅ Detected ${events.length} valid event(s):`, events.map(e => e.title));
+    }
 
     return events;
 

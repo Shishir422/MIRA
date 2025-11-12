@@ -314,6 +314,21 @@ async function renderJournalViewPage() {
           </div>
         </div>
       `;
+    } else {
+      // Show "No events found" message
+      html += `
+        <div class="analysis-card analysis-card-events">
+          <div class="analysis-card-header">
+            <span class="analysis-card-icon">📅</span>
+            <h3 class="analysis-card-title">Detected Events</h3>
+          </div>
+          <div class="events-list">
+            <p style="text-align: center; color: #666; padding: 20px; font-style: italic;">
+              No scheduled events or appointments detected in this journal entry.
+            </p>
+          </div>
+        </div>
+      `;
     }
 
     if (analysis.sentiment) {
