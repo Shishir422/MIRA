@@ -11,7 +11,7 @@ async function renderTodosPage() {
     <div class="container" style="padding-top: 100px;">
       <div class="todos-header">
         <div>
-          <h1 class="todos-title">✅ Todo List</h1>
+          <h1 class="todos-title"><span class="title-emoji">✅</span> Todo List</h1>
           <p class="todos-subtitle">Manage your tasks and stay organized</p>
         </div>
         <div style="display: flex; gap: 12px; align-items: center;">

@@ -7,7 +7,7 @@ async function renderEventsPage() {
     <div class="container" style="padding-top: 100px;">
       <div class="events-header">
         <div>
-          <h1 class="events-title">📅 Events</h1>
+          <h1 class="events-title"><span class="title-emoji">📅</span> Events</h1>
           <p class="events-subtitle">All your scheduled events and reminders</p>
         </div>
         <div style="display: flex; gap: 12px; align-items: center;">

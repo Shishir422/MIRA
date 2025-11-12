@@ -6,7 +6,7 @@ async function renderDashboardPage() {
     ${renderNavbar()}
     <div class="container" style="padding-top: 100px;">
       <div class="dashboard-header">
-        <h1 class="dashboard-title">📊 Dashboard</h1>
+        <h1 class="dashboard-title"><span class="title-emoji">📊</span> Dashboard</h1>
         <p class="dashboard-subtitle">Track your productivity and journaling progress</p>
       </div>
 

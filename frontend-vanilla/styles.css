@@ -1416,6 +1416,18 @@ body::before {
   line-height: 1.2;
 }
 
+/* Make emojis/icons visible in all titles */
+.title-emoji {
+  background-clip: border-box !important;
+  -webkit-background-clip: border-box !important;
+  -webkit-text-fill-color: initial !important;
+  color: #fff !important;
+  display: inline-block;
+  filter: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
 .todos-subtitle {
   color: var(--muted);
   font-size: 16px;
