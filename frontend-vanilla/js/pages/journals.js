@@ -9,7 +9,7 @@ async function renderJournalsPage() {
         <div>
           <h1 class="journals-title">
             My Journals
-          
+            <span id="streak-badge" class="streak-badge"></span>
           </h1>
         </div>
         <div style="display: flex; gap: 12px;">
@@ -24,8 +24,7 @@ async function renderJournalsPage() {
   `;
 
   const content = document.getElementById('journals-content');
-  const streakBadge = document.getElementById('streak-badge'); // May not exist
-
+  
   // Load journals
   try {
     const response = await journalAPI.getAll();
@@ -41,11 +40,48 @@ async function renderJournalsPage() {
             <button class="btn btn-primary" onclick="navigateTo('/journal/new')">Create First Journal</button>
           </div>
         `;
-      } else {
-        // Calculate streak (max from all journals) - only if streak badge exists
+        
+        // Hide streak badge if no journals
+        const streakBadge = document.getElementById('streak-badge');
         if (streakBadge) {
-          const maxStreak = Math.max(...journals.map(j => j.streakCount || 0));
-          streakBadge.textContent = `🔥 ${maxStreak} day streak`;
+          streakBadge.style.display = 'none';
+        }
+      } else {
+        // Calculate current streak based on consecutive days
+        const streakBadge = document.getElementById('streak-badge');
+        if (streakBadge) {
+          streakBadge.style.display = 'inline-flex';
+          
+          // Sort journals by date (newest first)
+          const sortedJournals = [...journals].sort((a, b) => new Date(b.date) - new Date(a.date));
+          
+          // Calculate consecutive days streak
+          let currentStreak = 0;
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          let checkDate = new Date(today);
+          
+          for (const journal of sortedJournals) {
+            const journalDate = new Date(journal.date);
+            journalDate.setHours(0, 0, 0, 0);
+            
+            // Check if this journal is for the date we're looking for
+            if (journalDate.getTime() === checkDate.getTime()) {
+              currentStreak++;
+              checkDate.setDate(checkDate.getDate() - 1); // Move to previous day
+            } else if (journalDate < checkDate) {
+              // Journal is older than expected, break streak
+              break;
+            }
+            // If journal is newer, skip it (already counted or future date)
+          }
+          
+          if (currentStreak > 0) {
+            streakBadge.textContent = `🔥 ${currentStreak} day streak`;
+          } else {
+            streakBadge.textContent = `🔥 Start your streak!`;
+          }
         }
 
         content.innerHTML = `
