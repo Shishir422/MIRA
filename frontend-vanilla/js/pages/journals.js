@@ -89,17 +89,15 @@ async function renderJournalsPage() {
             ${journals.map(journal => `
               <div class="journal-card" onclick="navigateTo('/journal/${journal._id}')">
                 <div class="journal-card-header">
-                  <div class="journal-number">#${journal.journalNumber}</div>
+                  <h3 class="journal-card-title">${journal.title || 'Untitled Entry'}</h3>
                   <button class="journal-delete-btn" id="delete-journal-${journal._id}" title="Delete journal" onclick="event.stopPropagation()">×</button>
                 </div>
-                <h3 class="journal-card-title">${journal.title || 'Untitled Entry'}</h3>
                 <p class="journal-card-preview">${journal.content.substring(0, 150)}${journal.content.length > 150 ? '...' : ''}</p>
                 <p class="journal-card-date">${new Date(journal.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
               </div>
             `).join('')}
           </div>
         `;
-        
         // Add event listeners for delete buttons
         journals.forEach(journal => {
           const deleteBtn = document.getElementById(`delete-journal-${journal._id}`);
@@ -132,7 +130,7 @@ async function renderJournalsPage() {
   document.getElementById('new-journal-btn').addEventListener('click', () => {
     navigateTo('/journal/new');
   });
-  
+
   // Delete journal function
   async function deleteJournal(journalId) {
     try {
@@ -140,7 +138,6 @@ async function renderJournalsPage() {
       if (response.ok && response.data.success) {
         // Reload the page to refresh the list
         await renderJournalsPage();
-        showMessage('Journal deleted successfully', 'success');
       } else {
         alert('Failed to delete journal: ' + (response.data.message || 'Unknown error'));
       }
