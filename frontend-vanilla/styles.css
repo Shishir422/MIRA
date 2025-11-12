@@ -269,6 +269,146 @@ body::before {
   box-shadow: 0 12px 32px rgba(2,6,23,0.5);
 }
 
+/* Landing Features Section */
+.landing-features {
+  width: 100%;
+  max-width: 1200px;
+  margin-top: 80px;
+  padding: 0 20px;
+  animation: fadeIn 1.2s ease 0.4s both;
+}
+
+.landing-features-title {
+  text-align: center;
+  font-size: 36px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 48px;
+  background: linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.8) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -1px;
+}
+
+.landing-features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 32px;
+}
+
+.landing-feature-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 32px rgba(2,6,23,0.4);
+  backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0ea5ff 0%, #2563eb 50%, #6366f1 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.landing-feature-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 48px rgba(2,6,23,0.6);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.landing-feature-card:hover::before {
+  opacity: 1;
+}
+
+.landing-feature-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+}
+
+.landing-feature-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 16px;
+  letter-spacing: -0.5px;
+}
+
+.landing-feature-description {
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.75);
+  font-weight: 400;
+}
+
+/* Landing Info Section */
+.landing-info {
+  width: 100%;
+  max-width: 1000px;
+  margin-top: 80px;
+  padding: 0 20px;
+  animation: fadeIn 1.4s ease 0.6s both;
+}
+
+.landing-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.landing-info-item {
+  text-align: center;
+  padding: 32px 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.landing-info-item:hover {
+  transform: translateY(-4px);
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+  border-color: rgba(255,255,255,0.12);
+  box-shadow: 0 12px 32px rgba(2,6,23,0.5);
+}
+
+.landing-info-number {
+  font-size: 40px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #0ea5ff 0%, #6366f1 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 12px;
+}
+
+.landing-info-label {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.landing-info-text {
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.5;
+}
+
 /* hero */
 .landing-hero {
   min-height: calc(100vh - 120px);
@@ -1980,6 +2120,21 @@ body::before {
   .landing-description { font-size: 16px; }
   .landing-actions { flex-direction: column; }
   .landing-btn { width: 100%; min-width: auto; }
+  
+  .landing-features { margin-top: 60px; }
+  .landing-features-title { font-size: 28px; margin-bottom: 32px; }
+  .landing-features-grid { grid-template-columns: 1fr; gap: 20px; }
+  .landing-feature-card { padding: 24px; }
+  .landing-feature-icon { font-size: 40px; }
+  .landing-feature-title { font-size: 20px; }
+  .landing-feature-description { font-size: 14px; }
+  
+  .landing-info { margin-top: 60px; }
+  .landing-info-grid { grid-template-columns: 1fr; gap: 20px; }
+  .landing-info-item { padding: 24px 20px; }
+  .landing-info-number { font-size: 32px; }
+  .landing-info-label { font-size: 16px; }
+  .landing-info-text { font-size: 13px; }
 }
 
 
