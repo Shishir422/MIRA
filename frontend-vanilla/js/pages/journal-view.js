@@ -49,7 +49,13 @@ async function renderJournalViewPage() {
 
         <div class="form-group">
           <label class="form-label">Your Journal</label>
-          <textarea id="content-input" class="form-textarea" placeholder="Write your thoughts, events, feelings... The AI will auto-analyze after 5 seconds of inactivity." required></textarea>
+          <div style="position: relative;">
+            <textarea id="content-input" class="form-textarea" placeholder="Write your thoughts, events, feelings... The AI will auto-analyze after 5 seconds of inactivity." required></textarea>
+            <button type="button" id="speech-to-text-btn" class="speech-to-text-btn" title="Click to record speech">
+              <span id="mic-icon">🎤</span>
+              <span id="mic-status" class="mic-status"></span>
+            </button>
+          </div>
         </div>
 
         <div style="display: flex; gap: 12px; align-items: center;">
@@ -440,11 +446,176 @@ async function renderJournalViewPage() {
   console.log('🚀 Initializing journal view page', { isNew, journalId: currentJournalId });
   setupAutoSave();
 
+  // Setup speech-to-text (pass showMessage function)
+  setupSpeechToText(contentInput, showMessage);
+
   // Reset initial load flag after short delay
   setTimeout(() => {
     initialLoad = false;
     console.log('✅ Initial load complete - auto-save now active');
   }, 500);
+}
+
+// Speech-to-Text functionality using Whisper API
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+
+function setupSpeechToText(contentInput, showMessage) {
+  const speechBtn = document.getElementById('speech-to-text-btn');
+  const micIcon = document.getElementById('mic-icon');
+  const micStatus = document.getElementById('mic-status');
+  
+  if (!speechBtn) return;
+
+  speechBtn.addEventListener('click', async () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      await startRecording();
+    }
+  });
+
+  async function startRecording() {
+    try {
+      // Check for OpenAI API key
+      let apiKey = localStorage.getItem('openai_api_key');
+      if (!apiKey) {
+        apiKey = prompt('Please enter your OpenAI API key to use speech-to-text:\n\n(Your key will be stored locally in your browser)');
+        if (!apiKey || !apiKey.trim()) {
+          if (showMessage) showMessage('API key is required for speech-to-text', 'error');
+          return;
+        }
+        localStorage.setItem('openai_api_key', apiKey.trim());
+      }
+
+      // Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+        await transcribeAudio();
+      };
+
+      mediaRecorder.start();
+      isRecording = true;
+      
+      micIcon.textContent = '⏹️';
+      micStatus.textContent = 'Recording...';
+      speechBtn.classList.add('recording');
+      if (showMessage) showMessage('Recording started. Click again to stop.', 'success');
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        if (showMessage) showMessage('Microphone permission denied. Please allow microphone access.', 'error');
+      } else {
+        if (showMessage) showMessage('Failed to start recording: ' + error.message, 'error');
+      }
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      isRecording = false;
+      
+      micIcon.textContent = '🎤';
+      micStatus.textContent = 'Processing...';
+      speechBtn.classList.remove('recording');
+      speechBtn.disabled = true;
+    }
+  }
+
+  async function transcribeAudio() {
+    try {
+      const micStatus = document.getElementById('mic-status');
+      micStatus.textContent = 'Transcribing...';
+      
+      // Convert audio chunks to blob
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      
+      // Convert to file format for OpenAI API
+      const file = new File([audioBlob], 'recording.webm', { type: 'audio/webm' });
+      
+      // Create FormData
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('model', 'whisper-1');
+      formData.append('language', 'en'); // Optional: specify language
+      
+      // Get API key
+      const apiKey = localStorage.getItem('openai_api_key');
+      
+      // Call OpenAI Whisper API
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const transcribedText = data.text;
+      
+      // Insert transcribed text into textarea
+      const currentText = contentInput.value;
+      const cursorPos = contentInput.selectionStart;
+      const textBefore = currentText.substring(0, cursorPos);
+      const textAfter = currentText.substring(cursorPos);
+      
+      // Add space if there's text before
+      const separator = textBefore.trim() && !textBefore.endsWith(' ') ? ' ' : '';
+      contentInput.value = textBefore + separator + transcribedText + textAfter;
+      
+      // Set cursor position after inserted text
+      const newCursorPos = cursorPos + separator.length + transcribedText.length;
+      contentInput.setSelectionRange(newCursorPos, newCursorPos);
+      
+      // Trigger input event to activate auto-save
+      contentInput.dispatchEvent(new Event('input', { bubbles: true }));
+      
+      micStatus.textContent = '✓ Transcribed';
+      speechBtn.disabled = false;
+      if (showMessage) showMessage('Speech transcribed successfully!', 'success');
+      
+      // Reset status after 2 seconds
+      setTimeout(() => {
+        micStatus.textContent = '';
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error transcribing audio:', error);
+      micStatus.textContent = '❌ Error';
+      speechBtn.disabled = false;
+      
+      if (error.message.includes('API key') || error.message.includes('401')) {
+        localStorage.removeItem('openai_api_key');
+        if (showMessage) showMessage('Invalid API key. Please try again.', 'error');
+      } else {
+        if (showMessage) showMessage('Failed to transcribe: ' + error.message, 'error');
+      }
+      
+      setTimeout(() => {
+        micStatus.textContent = '';
+      }, 3000);
+    }
+  }
 }
 
 // Register route
