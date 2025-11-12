@@ -13,7 +13,9 @@ function renderNavbar() {
         </div>
         <div class="navbar-actions">
           ${isAuth ? `
+            <a href="#/dashboard" class="navbar-link">Dashboard</a>
             <a href="#/journals" class="navbar-link">Journals</a>
+            <a href="#/events" class="navbar-link">Events</a>
             <button class="btn btn-outline btn-sm" onclick="logout()">Logout</button>
           ` : `
             <button class="btn btn-outline btn-sm" onclick="navigateTo('/login')">Log in</button>

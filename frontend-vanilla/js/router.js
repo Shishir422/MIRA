@@ -35,10 +35,10 @@ async function handleRoute() {
     return;
   }
 
-  // Handle root - show landing page for unauthenticated, journals for authenticated
+  // Handle root - show landing page for unauthenticated, dashboard for authenticated
   if (path === '/') {
     if (isAuthenticated()) {
-      navigateTo('/journals');
+      navigateTo('/dashboard');
     } else {
       // Show landing page instead of redirecting to login
       const handler = routes['/'];

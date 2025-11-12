@@ -134,6 +134,12 @@ const reminderAPI = {
     return apiRequest(`/reminders/${id}/sync-to-calendar`, {
       method: 'POST',
     });
+  },
+
+  async toggleComplete(id) {
+    return apiRequest(`/reminders/${id}/toggle-complete`, {
+      method: 'PUT',
+    });
   }
 };
 
