@@ -159,3 +159,107 @@ const calendarAPI = {
     });
   }
 };
+
+// Whisper API (Speech-to-Text)
+const whisperAPI = {
+  async transcribe(audioFile) {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('audio', audioFile);
+
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/whisper/transcribe`, {
+        method: 'POST',
+        headers: headers,
+        body: formData
+      });
+
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response:', text.substring(0, 200));
+        return {
+          ok: false,
+          status: response.status,
+          data: {
+            success: false,
+            message: `Server returned non-JSON response. Status: ${response.status}`,
+            data: null
+          }
+        };
+      }
+
+      const data = await response.json();
+      
+      return {
+        ok: response.ok,
+        status: response.status,
+        data: data
+      };
+    } catch (error) {
+      console.error('Whisper API error:', error);
+      return {
+        ok: false,
+        status: 500,
+        data: {
+          success: false,
+          message: error.message || 'Network error',
+          data: null
+        }
+      };
+    }
+  }
+};
+
+// Todo API
+const todoAPI = {
+  async getAll() {
+    return apiRequest('/todos');
+  },
+
+  async create(data) {
+    return apiRequest('/todos', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async update(id, data) {
+    return apiRequest(`/todos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async delete(id) {
+    return apiRequest(`/todos/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async reorder(todoIds) {
+    return apiRequest('/todos/reorder', {
+      method: 'POST',
+      body: JSON.stringify({ todoIds }),
+    });
+  },
+
+  async prioritizeWithAI() {
+    return apiRequest('/todos/prioritize-ai', {
+      method: 'POST',
+    });
+  },
+
+  async chatWithAI(message) {
+    return apiRequest('/todos/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  }
+};

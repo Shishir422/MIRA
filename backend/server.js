@@ -10,6 +10,7 @@ const journalRoutes = require('./routes/journalRoutes');
 const meetingRoutes = require('./routes/meetingRoutes');
 const reminderRoutes = require('./routes/reminderRoutes');
 const calendarRoutes = require('./routes/calendarRoutes');
+const todoRoutes = require('./routes/todoRoutes');
 
 // Initialize Express app
 const app = express();
@@ -43,6 +44,7 @@ app.use('/api/journals', journalRoutes);
 app.use('/api/meetings', meetingRoutes);
 app.use('/api/reminders', reminderRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/todos', todoRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
