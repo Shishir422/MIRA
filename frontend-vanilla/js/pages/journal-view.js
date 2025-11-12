@@ -545,6 +545,14 @@ function setupSpeechToText(contentInput, showMessage) {
     if (showMessage) showMessage('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.', 'error');
     return;
   }
+  
+  // Check for internet connection (Web Speech API requires internet)
+  if (!navigator.onLine) {
+    speechBtn.disabled = true;
+    speechBtn.title = 'Internet connection required for speech recognition';
+    if (showMessage) showMessage('Speech recognition requires an internet connection. Please check your network connection.', 'error');
+    return;
+  }
 
   // Initialize Speech Recognition
   recognition = new SpeechRecognition();
@@ -631,26 +639,46 @@ function setupSpeechToText(contentInput, showMessage) {
     console.error('Speech recognition error:', event.error);
     isRecording = false;
     micIcon.textContent = '🎤';
-    micStatus.textContent = '❌ Error';
     speechBtn.classList.remove('recording');
     speechBtn.disabled = false;
     
     let errorMessage = 'Speech recognition error';
+    let statusMessage = '❌ Error';
+    
     if (event.error === 'no-speech') {
       errorMessage = 'No speech detected. Please try again.';
+      statusMessage = 'No speech detected';
     } else if (event.error === 'audio-capture') {
-      errorMessage = 'No microphone found. Please check your microphone.';
+      errorMessage = 'No microphone found. Please check your microphone connection.';
+      statusMessage = 'No microphone';
     } else if (event.error === 'not-allowed') {
-      errorMessage = 'Microphone permission denied. Please allow microphone access.';
+      errorMessage = 'Microphone permission denied. Please allow microphone access in your browser settings.';
+      statusMessage = 'Permission denied';
+    } else if (event.error === 'network') {
+      errorMessage = 'Network error: Speech recognition requires an internet connection. Please check your connection and try again.';
+      statusMessage = 'Network error';
+    } else if (event.error === 'aborted') {
+      errorMessage = 'Speech recognition was aborted.';
+      statusMessage = 'Aborted';
+    } else if (event.error === 'service-not-allowed') {
+      errorMessage = 'Speech recognition service is not available. Please try again later.';
+      statusMessage = 'Service unavailable';
     } else {
-      errorMessage = `Speech recognition error: ${event.error}`;
+      errorMessage = `Speech recognition error: ${event.error}. Please check your internet connection and microphone permissions.`;
+      statusMessage = `Error: ${event.error}`;
     }
     
-    if (showMessage) showMessage(errorMessage, 'error');
+    micStatus.textContent = statusMessage;
     
+    if (showMessage) {
+      showMessage(errorMessage, 'error');
+    }
+    
+    // For network errors, show a longer message
+    const timeoutDuration = event.error === 'network' ? 5000 : 3000;
     setTimeout(() => {
       micStatus.textContent = '';
-    }, 3000);
+    }, timeoutDuration);
   };
 
   recognition.onend = () => {
@@ -712,15 +740,47 @@ function setupSpeechToText(contentInput, showMessage) {
       // Stop recording
       recognition.stop();
     } else {
+      // Check internet connection before starting
+      if (!navigator.onLine) {
+        if (showMessage) showMessage('Internet connection required. Please check your network and try again.', 'error');
+        return;
+      }
+      
       // Start recording
       try {
         finalTranscript = '';
+        interimTranscript = '';
         recognition.start();
       } catch (error) {
         console.error('Error starting speech recognition:', error);
-        if (showMessage) showMessage('Failed to start speech recognition: ' + error.message, 'error');
+        let errorMsg = 'Failed to start speech recognition. ';
+        if (error.message && error.message.includes('already started')) {
+          errorMsg += 'Recognition is already running.';
+        } else if (!navigator.onLine) {
+          errorMsg += 'Internet connection required.';
+        } else {
+          errorMsg += error.message || 'Please check your internet connection and microphone permissions.';
+        }
+        if (showMessage) showMessage(errorMsg, 'error');
       }
     }
+  });
+  
+  // Listen for online/offline events to update button state
+  window.addEventListener('online', () => {
+    if (speechBtn.disabled && speechBtn.title.includes('Internet')) {
+      speechBtn.disabled = false;
+      speechBtn.title = 'Click to record speech';
+    }
+  });
+  
+  window.addEventListener('offline', () => {
+    if (isRecording) {
+      recognition.stop();
+    }
+    speechBtn.disabled = true;
+    speechBtn.title = 'Internet connection required for speech recognition';
+    if (showMessage) showMessage('Internet connection lost. Speech recognition requires an active connection.', 'error');
   });
 }
 
