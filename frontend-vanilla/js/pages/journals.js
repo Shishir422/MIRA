@@ -24,7 +24,7 @@ async function renderJournalsPage() {
   `;
 
   const content = document.getElementById('journals-content');
-  const streakBadge = document.getElementById('streak-badge');
+  const streakBadge = document.getElementById('streak-badge'); // May not exist
 
   // Load journals
   try {
@@ -42,9 +42,11 @@ async function renderJournalsPage() {
           </div>
         `;
       } else {
-        // Calculate streak (max from all journals)
-        const maxStreak = Math.max(...journals.map(j => j.streakCount || 0));
-        streakBadge.textContent = `🔥 ${maxStreak} day streak`;
+        // Calculate streak (max from all journals) - only if streak badge exists
+        if (streakBadge) {
+          const maxStreak = Math.max(...journals.map(j => j.streakCount || 0));
+          streakBadge.textContent = `🔥 ${maxStreak} day streak`;
+        }
 
         content.innerHTML = `
           <div class="journals-grid">
