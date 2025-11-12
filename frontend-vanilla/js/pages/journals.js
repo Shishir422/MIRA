@@ -9,7 +9,7 @@ async function renderJournalsPage() {
         <div>
           <h1 class="journals-title">
             My Journals
-            <span class="streak-badge" id="streak-badge">🔥 0 day streak</span>
+          
           </h1>
         </div>
         <div style="display: flex; gap: 12px;">
