@@ -237,11 +237,9 @@ npm install
 ```env
 PORT=5000
 MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/mira
-JWT_SECRET=your_secure_32_character_jwt_secret_here
 GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 GOOGLE_REDIRECT_URI=http://localhost:5000/api/calendar/callback
-FRONTEND_URL=http://localhost:5173
 ```
 
 **4. Get Google Calendar Credentials**
