@@ -1,6 +1,6 @@
 Team - Target 
 Team Leader:Thanush J
-Team Members:shishir R bangera ,
+Team Members: Shishir R bangera ,
 Danish Hussain
 Anvith S Shetty
 
