@@ -1,4 +1,4 @@
-// Authentication utilities
+// Authentication utilitie
 function setToken(token) {
   localStorage.setItem('token', token);
 }
