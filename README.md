@@ -1,3 +1,9 @@
+Team - Target 
+Team Leader:Thanush J
+Team Members:shishir R bangera ,
+Danish Hussain
+Anvith S Shetty
+
 # MIRA - Mindful Intelligent Reflective Assistant
 
 **An AI-Powered Personal Journaling Application with Autonomous Reminder Creation**
