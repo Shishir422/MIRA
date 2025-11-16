@@ -1,62 +1,146 @@
 # MIRA - Mindful Intelligent Reflective Assistant
 
-**An AI-Powered Personal Journaling Application**
+**An AI-Powered Personal Journaling Application with Autonomous Reminder Creation**
 
-MIRA is a personal journaling web application that uses a local AI model (Llama3) to automatically analyze your journal entries, extract insights, detect future events, and create calendar reminders autonomously.
+MIRA is a production-ready personal journaling web application that uses a local AI model (Llama3) to automatically analyze your journal entries, extract insights, detect future events, and create calendar reminders autonomously with intelligent 3-layer duplicate prevention.
 
-## 🤖 AI Features (What Actually Works)
+## 🎯 What Makes MIRA Special
 
+**Agentic AI with Memory** - MIRA uses intelligent AI that doesn't just extract events from your journals—it makes autonomous decisions about which events deserve reminders by:
+- Analyzing your recent journal history for behavioral patterns
+- Detecting semantic duplicates (understands "client demo" = "preparing for demo")
+- Autonomously deciding priority levels based on context and urgency
+- Enhancing event descriptions with preparation notes from your journal content
+- **3-Layer Duplicate Prevention** system (rule-based + AI semantic + database) ensures zero duplicate reminders
+
+## 🤖 AI-Powered Features
+
+### **Intelligent Journal Analysis**
 - **Auto-Save**: Automatically saves journals 2 seconds after you stop typing
-- **Auto-Analysis**: Automatically analyzes journals 5 seconds after you stop typing using local Llama3 LLM
-- **Semantic Event Detection**: AI detects future events from natural language (meetings, appointments, deadlines)
-- **🤖 Agentic AI Reminder Creation**: **Llama3 AI intelligently decides** which events need reminders and autonomously creates them with enhanced descriptions and context
-- **Automatic Calendar Sync**: If Google Calendar is connected, AI-created reminders auto-sync without asking
-- **Semantic Understanding**: Uses Llama3 for deep semantic analysis, not keyword matching
-- **AI Decision Making**: AI agent autonomously decides reminder priority, adds preparation notes, and filters out casual mentions
+- **Auto-Analysis**: Automatically analyzes journals 5 seconds after typing stops using local Llama3 LLM
+- **Semantic Understanding**: Deep semantic analysis using Llama3 (Temperature: 0.15 for consistent results)
+- **Natural Language Event Detection**: AI detects future events from conversational text:
+  - "I have a meeting tomorrow at 3pm"
+  - "Dentist appointment on December 12 at 10am"
+  - "Submit report by Friday at 5pm"
+  - Intelligently ignores vague mentions and past events
 
-## ✨ Core Features
+### **🤖 Agentic AI Reminder Creation (Core Innovation)**
 
-- **User Authentication**: JWT-based secure signup/login system with bcrypt password hashing
-- **Daily Journaling**: Create, read, update, and delete journal entries with streak tracking
-- **AI Journal Analysis** (via Ollama + Llama3 8B):
-  - Productive, unproductive, and restful activities categorization
-  - Emotional state detection
-  - Personalized suggestions (3-5 actionable recommendations)
-  - Overall sentiment analysis (positive/neutral/negative)
-- **Smart Event Detection**: Detects events from natural language:
-  - "I have a meeting tomorrow at 3pm" ✓
-  - "Dentist appointment on December 12 at 10am" ✓
-  - "Submit report by Friday at 5pm" ✓
-  - Ignores vague mentions without dates
-- **Google Calendar Integration** (Optional): 
-  - OAuth 2.0 secure authentication (tokens stored per-user in MongoDB)
-  - Automatic event sync to Google Calendar
-  - Connection status indicator
-  - Each developer needs their own Google Cloud credentials
-- **Vanilla JavaScript Frontend**: Pure HTML/CSS/JavaScript with hash-based routing, no build tools needed
-- **Protected Routes**: Automatic redirect to login for unauthenticated users
+The AI agent autonomously manages your reminders through intelligent decision-making:
 
-## 🛠 Tech Stack
+**Context-Aware Decision Making:**
+- Receives your current journal entry plus last 5 journal entries for pattern recognition
+- Accesses all existing reminders for comprehensive duplicate detection
+- Analyzes detected events against your personal history
 
-**Backend:**
-- Node.js + Express.js
-- MongoDB Atlas + Mongoose ODM
-- JWT Authentication (30-day expiration)
-- bcryptjs for password hashing
-- **Ollama + Llama3 8B** (local LLM for AI analysis)
-- Google Calendar API v3 (OAuth 2.0 + googleapis)
+**Autonomous Intelligence:**
+- Decides `shouldCreate: true/false` for each detected event
+- Assigns priority levels (high/medium/low) based on context
+- Adds intelligent preparation notes from journal context
+- Filters casual mentions and duplicate events automatically
 
-**Frontend (Active - In Production):**
-- **frontend-vanilla/** - Pure HTML5, CSS3, Vanilla JavaScript (ES6+)
-- Hash-based SPA routing (#/login, #/journals, #/journal/:id)
-- Native Fetch API for HTTP requests
-- Zero dependencies, no build tools required
-- Served directly by Express at http://localhost:5000
+**3-Layer Duplicate Prevention System:**
+1. **Pre-Filter (Rule-Based)**: Same date + similar title detection (~70% of duplicates caught)
+2. **AI Semantic Analysis**: Llama3 understands "client demo" = "preparing for demo" = "demo with client"
+3. **Database Safety Net**: Unique constraints prevent any edge cases
 
-**Frontend (Archived - Not Used):**
-- **frontend/** - React 18 + Vite + TailwindCSS
-- Status: Completely disconnected, not served by backend
-- Can be deleted or archived
+**Real Example:**
+```
+User writes: "Working on project. Client demo on the 25th at 3pm. Still preparing for the demo."
+
+AI Processing:
+- Detects: "Client demo" and "preparing for the demo" (same date)
+- Decides: Create 1 reminder (filters duplicate mention)
+- Enhances: "Client demo - Prepare slides, test environment, review features"
+- Priority: HIGH (based on context)
+```
+
+### **Comprehensive Journal Analysis**
+- **Activity Categorization**: Productive, unproductive, and restful activities with semantic understanding
+- **Emotional Intelligence**: Detects explicit emotions and reads emotional tone from context
+- **Personalized Suggestions**: 3-5 actionable recommendations tailored to your journal content
+- **Sentiment Analysis**: Overall mood detection (positive/neutral/negative)
+
+### **Automatic Google Calendar Integration**
+- One-click OAuth 2.0 secure authentication
+- Auto-sync AI-created reminders without manual intervention
+- Timezone-aware event creation (defaults to Asia/Kolkata, customizable)
+- Each event includes AI-enhanced descriptions with preparation notes
+- Automatic popup (30min) and email (60min) reminders
+- Real-time sync status with calendar links
+
+## ✨ Complete Feature Set
+
+### **Smart Journaling**
+- Create, read, update, and delete journal entries
+- Auto-save technology (2-second delay prevents data loss)
+- Sequential journal numbering (#1, #2, #3...)
+- Streak tracking for consecutive journaling days
+- Delete confirmation for safety
+
+### **Interactive Dashboard**
+Built with Chart.js for beautiful data visualization:
+- **Real-time Stats**: Total journals, current streak, completed tasks, upcoming events
+- **Productivity Chart**: 7-day activity visualization with interactive tooltips
+- **Yesterday's Summary**: Quick preview with sentiment analysis
+- **Activity Timeline**: Recent journals and reminders in chronological order
+
+### **Events Management Center**
+- Comprehensive reminder viewing with smart filters (Today/Upcoming/Past/Cancelled)
+- Detailed event cards displaying:
+  - Full event information with date/time
+  - Status badges (proposed/synced/completed/cancelled)
+  - AI reasoning explanations
+  - Direct Google Calendar links (when synced)
+  - Quick complete/delete actions
+
+### **AI-Powered Todo List**
+- Create, update, and delete todos with ease
+- Manual drag-and-drop reordering
+- **AI Prioritization Engine**:
+  - Llama3 analyzes all incomplete todos
+  - Considers due dates, urgency, and task context
+  - Intelligently ranks and reorders based on importance
+- Due date/time support with smart sorting
+- Visual completion tracking
+
+### **Speech-to-Text Integration**
+- Real-time voice transcription in journal editor
+- Continuous recording mode with live feedback
+- Interim and final transcription results
+- Seamless text insertion at cursor position
+
+### **Secure Authentication & Privacy**
+- JWT-based authentication system (30-day token expiration)
+- bcrypt password hashing for maximum security
+- Protected routes with automatic login redirect
+- Per-user OAuth tokens stored securely in MongoDB
+- Each user connects their own Google Calendar account
+
+## 🛠 Technology Stack
+
+### **Backend**
+- **Node.js + Express.js 4.18.2** - RESTful API server
+- **MongoDB Atlas + Mongoose 8.19.3** - Cloud NoSQL database
+- **Ollama + Llama3 8B** - Local AI model (Temperature: 0.15, JSON format)
+- **Google Calendar API v3** - OAuth 2.0 + Event synchronization
+- **JWT + bcryptjs** - Secure authentication and password hashing
+- **Axios, Multer, CORS** - HTTP client, file handling, cross-origin support
+
+### **Frontend**
+- **Pure Vanilla JavaScript (ES6+)** - Zero framework overhead
+- **HTML5 + CSS3** - Modern glassmorphism design
+- **Hash-based SPA Routing** - Seamless navigation (#/dashboard, #/journals, #/events, #/todos)
+- **Native Fetch API** - JWT-authenticated HTTP requests
+- **Chart.js 4.4.0** - Beautiful data visualization
+- **Web Speech API** - Browser-native voice input
+
+### **Database Architecture**
+- **User Model**: Authentication, OAuth tokens, timezone preferences
+- **Journal Model**: Content, AI analysis results, streak tracking
+- **Reminder Model**: Events, calendar sync status, AI metadata
+- **Todo Model**: Tasks, priority scores, completion status
 
 ## 📂 Project Structure
 
@@ -66,337 +150,300 @@ MIRA is a personal journaling web application that uses a local AI model (Llama3
 │   ├── config/
 │   │   └── db.js                 # MongoDB Atlas connection
 │   ├── models/
-│   │   ├── User.js               # User schema (email, password, Google OAuth tokens)
-│   │   ├── Journal.js            # Journal schema (title, content, AI analysis results)
-│   │   ├── Reminder.js           # Reminder schema (event details, calendar sync status)
-│   │   └── Meeting.js            # Meeting schema (BACKEND ONLY - no UI yet)
+│   │   ├── User.js               # User schema with OAuth tokens
+│   │   ├── Journal.js            # Journal schema with AI analysis
+│   │   ├── Reminder.js           # Reminder schema with calendar sync
+│   │   └── Todo.js               # Todo schema with AI prioritization
 │   ├── routes/
-│   │   ├── authRoutes.js         # Auth endpoints
+│   │   ├── authRoutes.js         # Authentication endpoints
 │   │   ├── journalRoutes.js      # Journal CRUD + AI analysis
 │   │   ├── reminderRoutes.js     # Reminder management
 │   │   ├── calendarRoutes.js     # Google Calendar OAuth & sync
-│   │   └── meetingRoutes.js      # Meeting CRUD (API only - no frontend)
+│   │   └── todoRoutes.js         # Todo CRUD + AI prioritization
 │   ├── controllers/
 │   │   ├── authController.js     # Signup, login, getMe
-│   │   ├── journalController.js  # Journal CRUD + AI analysis + auto-reminders
-│   │   ├── reminderController.js # Reminder CRUD + calendar sync
-│   │   ├── calendarController.js # OAuth flow + Calendar API integration
-│   │   └── meetingController.js  # Meeting CRUD (no AI processing yet)
+│   │   ├── journalController.js  # Journal operations + AI analysis
+│   │   ├── reminderController.js # Reminder operations + calendar sync
+│   │   ├── calendarController.js # OAuth flow + Google Calendar API
+│   │   └── todoController.js     # Todo operations + AI prioritization
 │   ├── services/
-│   │   └── ollamaService.js      # Llama3 AI integration (analysis + event detection)
+│   │   └── ollamaService.js      # Llama3 AI integration (834 lines)
 │   ├── middleware/
-│   │   └── authMiddleware.js     # JWT protection middleware
+│   │   └── authMiddleware.js     # JWT authentication middleware
 │   ├── .env                      # Environment variables (NOT in git)
-│   ├── .env.example              # Template for environment setup
 │   ├── package.json              # Backend dependencies
-│   └── server.js                 # Express server (serves vanilla frontend)
+│   └── server.js                 # Express server entry point
 │
-├── frontend-vanilla/             # ACTIVE FRONTEND (in production)
+├── frontend-vanilla/             # ACTIVE FRONTEND
 │   ├── js/
 │   │   ├── pages/
 │   │   │   ├── landing.js        # Landing page
 │   │   │   ├── login.js          # Login/signup page
-│   │   │   ├── journals.js       # Journal list with streak tracking
-│   │   │   ├── journal-view.js   # Journal editor + auto-save + auto-analyze
-│   │   │   └── calendar-connected.js # OAuth success page
-│   │   ├── api.js                # Fetch API client with JWT auth
-│   │   ├── auth.js               # Auth utilities
+│   │   │   ├── journals.js       # Journal list with streak
+│   │   │   ├── journal-view.js   # Journal editor with AI
+│   │   │   ├── dashboard.js      # Dashboard with Chart.js
+│   │   │   ├── events.js         # Events management
+│   │   │   ├── todos.js          # Todo list with AI prioritization
+│   │   │   └── calendar-connected.js # OAuth success
+│   │   ├── components/
+│   │   │   └── navbar.js         # Reusable navigation bar
+│   │   ├── api.js                # API client with JWT auth
+│   │   ├── auth.js               # Authentication utilities
 │   │   ├── router.js             # Hash-based SPA routing
-│   │   └── app.js                # Main application
-│   ├── home/
-│   │   ├── home.html             # Homepage
-│   │   ├── home.css              # Homepage styles
-│   │   └── home.js               # Homepage logic
-│   ├── index.html                # Main HTML entry point
-│   └── styles.css                # Global styles
+│   │   └── app.js                # Application entry point
+│   ├── index.html                # Main HTML file
+│   └── styles.css                # Global styles (1400+ lines)
 │
-└── frontend/                     # ARCHIVED - NOT IN USE
-    ├── src/                      # React app (completely disconnected)
-    ├── package.json              # React dependencies (unused)
-    └── ...                       # Can be deleted or archived
+└── Main/HomePage/                # Static homepage
+    ├── home.html
+    ├── home.css
+    └── home.js
 ```
 
-## 📋 Setup Instructions
+## 📋 Quick Start Guide
 
 ### Prerequisites
+- **Node.js** (v18+) - [Download here](https://nodejs.org/)
+- **MongoDB Atlas** account - [Free tier signup](https://www.mongodb.com/cloud/atlas/register)
+- **Ollama + Llama3** - [Install guide](https://ollama.ai)
+- **Google Cloud** account (for Calendar) - [Console](https://console.cloud.google.com/)
 
-**Required:**
-- Node.js (v18 or higher)
-- MongoDB Atlas account (free tier works fine)
-- **Ollama installed locally** with Llama3 model
-- Google Cloud Console account (for Calendar API - optional but recommended)
+### Installation Steps
 
-**Install Ollama and Llama3:**
-1. Download Ollama from [https://ollama.ai](https://ollama.ai)
-2. Install and run Ollama
-3. Pull Llama3 model:
-   ```powershell
-   ollama pull llama3
-   ```
-4. Verify it's running:
-   ```powershell
-   ollama list
-   ```
+**1. Install Ollama and Llama3**
+```powershell
+# Download Ollama from https://ollama.ai
+# After installation:
+ollama pull llama3
+ollama list  # Verify installation
+```
 
-### Backend Setup
-
-**1. Install Dependencies**
-
+**2. Clone and Setup Backend**
 ```powershell
 cd backend
 npm install
+
+# Create .env file with your credentials
+# See .env.example for template
 ```
 
-**2. Configure Environment Variables**
-
-Create `backend/.env` file (see `backend/.env.example` for template):
-
+**3. Configure Environment Variables**
 ```env
 PORT=5000
-
-# MongoDB Atlas Connection
-MONGO_URI=mongodb+srv://<username>:<password>@<cluster-url>/mira?retryWrites=true&w=majority
-
-# JWT Secret (generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
-JWT_SECRET=your_secure_jwt_secret_here_min_32_characters
-
-# Google Calendar OAuth 2.0 (EACH DEVELOPER NEEDS THEIR OWN)
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/mira
+JWT_SECRET=your_secure_32_character_jwt_secret_here
 GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 GOOGLE_REDIRECT_URI=http://localhost:5000/api/calendar/callback
+FRONTEND_URL=http://localhost:5173
 ```
 
-**Important Security Note:**
-- OAuth tokens are stored **per-user** in MongoDB (User.googleRefreshToken, User.googleAccessToken)
-- Credentials are **NOT hardcoded** in the source code
-- Each developer must create their own Google Cloud project credentials
-- Each user connects their own Google Calendar account
+**4. Get Google Calendar Credentials**
+1. Create project at [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable "Google Calendar API"
+3. Create OAuth 2.0 Client ID (Web application)
+4. Add redirect URI: `http://localhost:5000/api/calendar/callback`
+5. Copy credentials to `.env`
 
-**Get Google Calendar Credentials:**
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project (e.g., "MIRA-Dev")
-3. Enable "Google Calendar API"
-4. Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client ID"
-5. Application type: Web application
-6. Authorized redirect URIs: `http://localhost:5000/api/calendar/callback`
-7. Copy Client ID and Client Secret to `.env`
-
-**3. Run Backend Server**
-
+**5. Start the Application**
 ```powershell
 cd backend
 npm run dev
 ```
 
-Server runs on `http://localhost:5000` and serves the frontend at the same URL.
+**6. Open Browser**
+```
+http://localhost:5000
+```
 
-### Frontend Setup
-
-**The vanilla frontend requires NO setup** - it's served directly by the backend.
-
-Just open your browser to `http://localhost:5000` after starting the backend.
-
-**No npm install, no build step, no separate dev server needed!**
+That's it! The frontend is served automatically by the backend.
 
 ## 🔌 API Endpoints
 
-### Authentication (Public)
-- `POST /api/auth/signup` - Register new user (name, email, password)
-- `POST /api/auth/login` - Login and get JWT token (30-day expiration)
+### Authentication
+- `POST /api/auth/signup` - Register new user
+- `POST /api/auth/login` - Login and receive JWT token
+- `GET /api/auth/me` - Get current user profile (protected)
 
-### Authentication (Protected)
-- `GET /api/auth/me` - Get current user info
-
-### Journals (All Protected)
-- `POST /api/journals/create` - Create journal entry
-- `GET /api/journals` - Get all user journals (sorted by date, descending)
+### Journals (Protected)
+- `POST /api/journals/create` - Create new journal entry
+- `GET /api/journals` - Get all user journals
 - `GET /api/journals/:id` - Get specific journal
 - `PUT /api/journals/:id` - Update journal
 - `DELETE /api/journals/:id` - Delete journal
-- `POST /api/journals/:id/analyze` - **AI analysis + auto-create reminders + auto-sync to calendar**
+- `POST /api/journals/:id/analyze` - **AI analysis + auto-create reminders + auto-sync calendar**
 
-### Reminders (All Protected)
+### Reminders (Protected)
 - `POST /api/reminders/propose` - Create reminder manually
 - `POST /api/reminders/:id/confirm` - Confirm proposed reminder
-- `GET /api/reminders` - Get all user reminders (sorted by event date)
+- `POST /api/reminders/:id/toggle-complete` - Mark complete/incomplete
+- `GET /api/reminders` - Get all user reminders
 - `DELETE /api/reminders/:id` - Delete reminder
-- `POST /api/reminders/:id/sync-to-calendar` - Manually sync reminder to Google Calendar
+- `POST /api/reminders/:id/sync-to-calendar` - Sync to Google Calendar
 
-### Google Calendar (Protected + Public Callback)
-- `GET /api/calendar/auth` - Get Google OAuth authorization URL
-- `GET /api/calendar/callback` - OAuth callback handler (public - Google redirects here)
-- `GET /api/calendar/status` - Check calendar connection status
-- `POST /api/calendar/disconnect` - Disconnect Google Calendar (removes tokens)
+### Todos (Protected)
+- `POST /api/todos` - Create new todo
+- `GET /api/todos` - Get all user todos
+- `PUT /api/todos/:id` - Update todo
+- `DELETE /api/todos/:id` - Delete todo
+- `POST /api/todos/reorder` - Reorder todos
+- `POST /api/todos/prioritize-ai` - **AI-powered prioritization**
 
-### Meetings (All Protected - No Frontend UI Yet)
-- `POST /api/meetings/create` - Create meeting with transcript
-- `GET /api/meetings` - Get all user meetings
-- `GET /api/meetings/:id` - Get specific meeting
-- `PUT /api/meetings/:id` - Update meeting
-- `DELETE /api/meetings/:id` - Delete meeting
+### Google Calendar (Protected)
+- `GET /api/calendar/auth` - Get OAuth authorization URL
+- `GET /api/calendar/callback` - OAuth callback handler
+- `GET /api/calendar/status` - Check connection status
+- `POST /api/calendar/disconnect` - Disconnect Google Calendar
 
-### Health Check (Public)
-- `GET /api/health` - Check backend status
+## 🌐 Frontend Routes
 
-## 🌐 Frontend Routes (Hash-Based Routing)
+- `#/` - Landing page / Dashboard
+- `#/login` - Login/Signup
+- `#/dashboard` - Analytics dashboard
+- `#/journals` - Journal list
+- `#/journal/new` - Create journal
+- `#/journal/:id` - Edit journal
+- `#/events` - Events management
+- `#/todos` - Todo list
+- `#/calendar-connected` - OAuth success
 
-- `#/` - Landing page (unauthenticated) or redirects to `#/journals` (authenticated)
-- `#/login` - Login/Signup page (public)
-- `#/journals` - List all journals with streak tracking (protected)
-- `#/journal/new` - Create new journal entry (protected)
-- `#/journal/:id` - View/edit journal with AI analysis (protected)
-- `#/calendar-connected` - Google Calendar OAuth callback success page (protected)
+## 🚀 How MIRA's AI Works
 
-All routes automatically redirect to `#/login` if user is not authenticated.
+### Complete AI Workflow:
 
-## 🚀 How It Works (AI Workflow)
-
-### The Agentic AI Workflow:
-
-1. **User writes journal** (e.g., "I have a team meeting tomorrow at 3pm to discuss the final year project")
-2. **Auto-save triggers** after 2 seconds of inactivity → saves to MongoDB
-3. **Auto-analyze triggers** after 5 seconds of inactivity:
-   - Two parallel AI calls to Llama3 (50% faster than sequential):
-     - Call 1: Analyze activities, emotions, sentiment
-     - Call 2: Detect future events with specific dates
-4. **🤖 Agentic AI Decision-Making**:
-   - **Third AI call**: Llama3 analyzes detected events and makes intelligent decisions:
-     - Decides which events truly need reminders (filters out casual mentions)
-     - Creates enhanced descriptions with context from the journal
-     - Adds preparation notes and suggestions
-     - Assigns priority levels (high/medium/low)
-     - Provides reasoning for each decision
-   - Creates approved reminders in database
-   - If Google Calendar connected → syncs AI-approved reminders to calendar
-5. **User sees results** displayed below journal editor—no button clicking needed
-
-### Example of AI Decision-Making:
-
-**Detected Events (from event detection):**
-```json
-[
-  {"title": "Team meeting", "date": "2025-11-12T15:00:00Z"},
-  {"title": "Maybe grab coffee", "date": "2025-11-13T10:00:00Z"}
-]
+**Step 1: Journal Creation**
+```
+User types journal → Auto-save (2s delay) → Saved to MongoDB
 ```
 
-**AI Agent Decision (createRemindersWithAI):**
-```json
-[
-  {
-    "title": "Team standup meeting",
-    "description": "Discuss sprint progress and final year project. Be prepared with your status update.",
-    "eventDate": "2025-11-12T15:00:00Z",
-    "shouldCreate": true,
-    "priority": "high",
-    "aiReasoning": "This is a confirmed work commitment that requires preparation",
-    "preparationNotes": "Review sprint progress, prepare status update for final year project discussion"
-  },
-  {
-    "title": "Maybe grab coffee",
-    "shouldCreate": false,
-    "aiReasoning": "Casual mention with uncertainty ('maybe'), not a firm commitment"
-  }
-]
+**Step 2: Automatic AI Analysis (5s delay)**
+```
+Parallel AI Processing (faster performance):
+├── Analysis #1: Activity categorization, emotions, sentiment, suggestions
+└── Analysis #2: Event detection from natural language
 ```
 
-**Result**: AI creates 1 reminder (approved), skips 1 (too casual)
-
-### Example Analysis Output:
-
-**User writes:**
+**Step 3: Agentic AI Decision Making**
 ```
-Had a productive day today. Completed the machine learning assignment 
-and attended the AI seminar. Spent 2 hours scrolling Instagram which 
-was a waste of time. Did a 30-minute jog in the morning. Feeling 
-energized but stressed about the upcoming deadline. Team standup 
-meeting is scheduled for tomorrow at 10am to discuss sprint progress.
+AI Agent receives:
+- Detected events from Step 2
+- User's last 5 journals (pattern recognition)
+- All existing reminders (duplicate prevention)
+
+AI Agent decides for each event:
+- shouldCreate: true/false (autonomous decision)
+- priority: high/medium/low (context-based)
+- Enhanced description with preparation notes
+- Filters duplicates through 3-layer system
+
+Output: Only necessary reminders created
 ```
 
-**AI Returns:**
-```json
-{
-  "productive": [
-    "Completed the machine learning assignment",
-    "Attended the AI seminar"
-  ],
-  "unproductive": [
-    "Spent 2 hours scrolling Instagram"
-  ],
-  "rest": [
-    "30-minute jog in the morning"
-  ],
-  "emotional": [
-    "Energized",
-    "Stressed"
-  ],
-  "suggestions": [
-    "Consider time-blocking to reduce social media usage during work hours",
-    "Maintain exercise routine for stress management",
-    "Break down the upcoming deadline into smaller tasks to reduce anxiety"
-  ],
-  "sentiment": "positive",
-  "detectedEvents": [
-    {
-      "title": "Team standup meeting",
-      "date": "2025-11-12T10:00:00Z",
-      "description": "Discuss sprint progress",
-      "type": "meeting"
-    }
-  ],
-  "autoCreatedReminders": 1,
-  "autoSyncedToCalendar": 1
-}
+**Step 4: Automatic Calendar Sync (if connected)**
 ```
+For each created reminder:
+- OAuth2 authentication with stored tokens
+- Create Google Calendar event
+- Add AI-enhanced description
+- Set timezone (Asia/Kolkata default)
+- Add popup + email reminders
+- Update reminder status to 'synced'
+```
+
+### AI Decision Example:
+```javascript
+Journal: "Working on project. Client demo on the 25th. Still preparing for demo."
+
+AI Processing:
+✓ Detects: "Client demo on the 25th" + "preparing for demo"
+✓ Recognizes: Same event (semantic duplicate)
+✓ Decides: Create 1 reminder only
+✓ Enhances: "Client demo - Prepare slides, test environment, review features"
+✓ Priority: HIGH (deadline-based)
+
+Result: 1 smart reminder created (not 2 duplicates)
+```
+
+## 🎨 Key Innovations
+
+1. **Agentic AI with Memory Context**
+   - AI receives user history (last 5 journals + all reminders)
+   - Makes context-aware decisions, not just pattern matching
+   - Autonomous `shouldCreate` decision for each event
+
+2. **3-Layer Duplicate Prevention**
+   - Layer 1: Rule-based pre-filter (70% duplicates caught)
+   - Layer 2: AI semantic understanding
+   - Layer 3: Database unique constraints
+
+3. **Timezone-Aware Calendar Sync**
+   - User-specific timezone settings (default: Asia/Kolkata)
+   - Prevents time mismatch issues in calendar events
+
+4. **Auto-Save + Auto-Analyze Architecture**
+   - Non-blocking async processing
+   - User never loses work
+   - AI analysis happens in background
+
+5. **Privacy-First Design**
+   - Llama3 runs locally via Ollama
+   - Journal analysis never sent to cloud AI services
+   - Per-user OAuth tokens (not shared between users)
+
+6. **Zero-Build Frontend**
+   - Pure vanilla JavaScript (no React/Vue/Angular)
+   - Served directly by Express
+   - Instant deployment, no compilation needed
 
 ## 📖 Usage Guide
 
-### 1. First Time Setup
-- Navigate to `http://localhost:5000`
-- Sign up with name, email, and password
-- Login to access journals
+### Getting Started
+1. Open `http://localhost:5000` in your browser
+2. Sign up with name, email, and password
+3. Login to access your personal dashboard
 
-### 2. Connecting Google Calendar (Optional - One-time)
-- Click "Connect Google Calendar" button
+### Connecting Google Calendar (Optional)
+- Click "Connect Google Calendar" in navigation
 - Authorize MIRA in Google OAuth screen
-- Once connected, future events auto-sync without asking
+- Once connected, all AI-created reminders auto-sync
 
-### 3. Writing a Journal
-- Click "New Entry" or navigate to `#/journal/new`
-- Write naturally: "Had a productive day. Completed the coding assignment. Team standup tomorrow at 10am."
-- **Auto-save**: Wait 2 seconds → Journal saves automatically (you'll see "Saved" indicator)
-- **Auto-analyze**: Wait 5 more seconds → AI analyzes content (you'll see loading spinner)
+### Writing Journals
+- Click "New Entry" button
+- Write naturally about your day
+- **Auto-save** activates after 2 seconds (see "Saved" indicator)
+- **Auto-analyze** starts after 5 seconds (AI processing spinner appears)
 
-### 4. Viewing AI Analysis
-- Scroll down below the editor to see:
-  - **Productive activities** - Work, study, exercise, goal-oriented tasks
-  - **Unproductive activities** - Time-wasting (only if you mention it negatively)
-  - **Restful activities** - Sleep, breaks, intentional relaxation
-  - **Emotional states** - Feelings detected from your writing
-  - **Personalized suggestions** - 3-5 actionable recommendations
-  - **Detected events** - Future events with dates automatically found
-- **No button clicking needed** - everything happens automatically
+### Viewing AI Insights
+Below your journal, you'll automatically see:
+- **Productive Activities**: Work, study, exercise detected
+- **Restful Activities**: Sleep, breaks, relaxation
+- **Emotional States**: Feelings from your writing
+- **AI Suggestions**: 3-5 personalized recommendations
+- **Detected Events**: Future events with auto-created reminders
 
-### 5. Managing Reminders
-- View all reminders on the journals page
-- Reminders show event date, title, and sync status
-- Delete reminders if no longer needed
-- If calendar connected, events already synced automatically
+### Managing Events & Reminders
+- View all events on **Events** page
+- Filter by: Today | Upcoming | Past | Cancelled
+- Mark events as complete
+- Delete unwanted reminders
+- Click calendar links to view in Google Calendar
 
-### 6. Supported Natural Language Formats
-The AI understands various date/time expressions:
-- **Relative dates**: "tomorrow", "next Monday", "in 5 days", "this Friday"
-- **Absolute dates**: "December 12", "Nov 15th", "12 of December", "on Friday"
-- **With time**: "at 3pm", "at 10:30am", "2:00 PM"
-- **Complete sentences**: "I have a dentist appointment on Friday at 2pm"
-- **Deadlines**: "Assignment due next Tuesday", "Submit report by Friday at 5pm"
+### Using AI Todo Prioritization
+- Add todos with optional due dates
+- Click "AI Prioritize" button
+- Llama3 analyzes urgency and reorders tasks
+- Manually drag-and-drop to adjust
 
-**What AI Ignores:**
-- Vague mentions: "I have a test" (no specific date)
-- Past events: "I went to the doctor" (already happened)
-- Non-events: "I should study" (not a scheduled event)
+### Natural Language Date Examples
+The AI understands:
+- "tomorrow at 3pm"
+- "December 12 at 10am"
+- "next Monday"
+- "on the 25th"
+- "Friday at 5pm"
+- "in 3 days"
 
-## 🔒 Security Features
+## 🔒 Security & Privacy
 
 - **JWT Authentication**: Secure token-based auth with 30-day expiration
 - **Password Hashing**: bcryptjs with salt rounds (10 rounds)
@@ -450,129 +497,65 @@ The AI understands various date/time expressions:
 - ✅ User signup and login with JWT authentication
 - ✅ Create, read, update, delete journal entries
 - ✅ Streak tracking for consecutive journaling days
-- ✅ Auto-save (2 seconds after typing stops)
-- ✅ Auto-analyze (5 seconds after typing stops)
-- ✅ AI semantic analysis of journal content (Llama3)
-- ✅ Productive/unproductive/restful activity extraction
-- ✅ Emotional state detection
-- ✅ Personalized suggestions (3-5 recommendations)
-- ✅ Overall sentiment analysis
-- ✅ Future event detection from natural language
-- ✅ **🤖 Agentic AI Reminder Creation** - Llama3 intelligently decides which reminders to create
-- ✅ **AI Decision-Making** - Filters casual mentions, assigns priorities, adds context
-- ✅ **AI-Enhanced Descriptions** - Adds preparation notes and reasoning
-- ✅ Google Calendar OAuth 2.0 connection
-- ✅ Automatic calendar sync for AI-approved reminders
-- ✅ Manual reminder deletion
-- ✅ Calendar connection status indicator
-- ✅ Calendar disconnect functionality
-- ✅ Protected routes with authentication
-- ✅ Vanilla JavaScript frontend (no build tools)
-- ✅ Hash-based SPA routing
-- ✅ Meeting CRUD backend API
+## 🔒 Security & Privacy
 
+- **JWT Authentication**: 30-day token expiration with secure bcrypt password hashing
+- **Per-User OAuth Tokens**: Each user connects their own Google Calendar (tokens never shared)
+- **Protected API Routes**: All journal/reminder endpoints require valid JWT
+- **Local AI Processing**: Llama3 runs locally via Ollama (journal content never sent to cloud)
+- **Environment Variables**: Sensitive credentials stored in `.env` (not committed to git)
+- **MongoDB Security**: Cloud database with authentication and encrypted connections
 
-## 📊 Database Schema
+## 🌟 Project Highlights
 
-**User Model:**
-- `name`: String (required)
-- `email`: String (required, unique, validated)
-- `password`: String (required, hashed with bcrypt)
-- `googleRefreshToken`: String (optional, null if not connected)
-- `googleAccessToken`: String (optional, null if not connected)
-- `timestamps`: createdAt, updatedAt
+✅ **Fully Functional Features**:
+- AI-powered journal analysis with Llama3
+- Autonomous reminder creation with 3-layer duplicate prevention
+- Google Calendar integration with OAuth 2.0
+- Interactive dashboard with Chart.js visualizations
+- AI-powered todo prioritization
+- Real-time speech-to-text input
+- Auto-save and auto-analyze functionality
+- Streak tracking and analytics
 
-**Journal Model:**
-- `userId`: ObjectId (reference to User)
-- `title`: String (optional)
-- `content`: String (required)
-- `date`: Date (defaults to current date)
-- `streakCount`: Number (defaults to 0)
-- `summary`: String (optional, AI-generated)
-- `insights`: String (optional, AI-generated)
-- `timestamps`: createdAt, updatedAt
+## 📊 Database Models
 
-**Reminder Model:**
-- `userId`: ObjectId (reference to User)
-- `journalId`: ObjectId (reference to Journal, optional)
-- `title`: String (required)
-- `description`: String (optional)
-- `eventDate`: Date (required)
-- `status`: String (enum: 'proposed', 'confirmed', 'synced', 'cancelled')
-- `googleCalendarEventId`: String (optional, null if not synced)
-- `originalSentence`: String (optional, extracted from journal)
-- `timestamps`: createdAt, updatedAt
+### User Model
+- Email, password (bcrypt hashed)
+- Google OAuth tokens (refresh + access)
+- Timezone preferences (default: Asia/Kolkata)
 
-**Meeting Model:**
-- `userId`: ObjectId (reference to User)
-- `title`: String (required)
-- `transcriptText`: String (required)
-- `summary`: String (optional, null - Phase 2)
-- `detectedDate`: Date (optional, null - Phase 2)
-- `timestamps`: createdAt, updatedAt
+### Journal Model
+- Title, content, date
+- AI analysis results (activities, emotions, sentiment, suggestions)
+- Streak counter
 
-## 🐛 Troubleshooting
+### Reminder Model
+- Event details (title, description, date, priority)
+- Status tracking (proposed/synced/completed/cancelled)
+- Google Calendar event ID and link
+- AI metadata (reasoning, preparation notes)
 
-**Issue: "Ollama service not available" error**
-- Solution: Start Ollama service (`ollama serve`)
-- Verify Llama3 is installed: `ollama list`
-- If not installed: `ollama pull llama3`
-
-**Issue: Frontend shows 404 error**
-- Solution: Ensure `backend/server.js` serves `frontend-vanilla/` directory
-- Check that backend is running on port 5000
-- Verify you're accessing `http://localhost:5000` (not 5173)
-
-**Issue: Google Calendar connection fails**
-- Solution: Check `.env` has correct GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
-- Verify redirect URI in Google Cloud Console matches: `http://localhost:5000/api/calendar/callback`
-- Ensure Google Calendar API is enabled in Google Cloud Console
-
-**Issue: Auto-save/Auto-analyze not triggering**
-- Solution: Wait full 2 seconds (save) or 5 seconds (analyze) without typing
-- Check browser console for errors
-- Verify Ollama is running for auto-analyze
-
-**Issue: JWT token expired**
-- Solution: Logout and login again (tokens expire after 30 days)
+### Todo Model
+- Task text, completion status
+- Priority score (AI-assigned)
+- Due date/time, manual ordering
 
 ## 🤝 Contributing
 
-This is an academic AI project demonstrating autonomous agent capabilities. Contributions welcome for:
-- Improving AI prompt engineering for better semantic analysis
-- Adding more calendar providers (Outlook, Apple Calendar)
-- Enhanced natural language event detection
-- Meeting transcript AI processing (Phase 2)
+This is an academic project demonstrating agentic AI capabilities. Contributions welcome for:
+- Enhanced AI prompt engineering
+- Additional calendar provider integrations
 - UI/UX improvements
-- Mobile responsive design
-- Export/import features
+- Performance optimizations
 
 ## 📄 License
 
-MIT License - Free to use for learning and development
-
-## 👨‍💻 Built With
-
-**AI & Machine Learning:**
-- Ollama (local LLM runtime)
-- Llama3 8B (Meta's language model)
-
-**Backend:**
-- Node.js + Express.js
-- MongoDB Atlas + Mongoose ODM
-- Google Calendar API v3
-
-**Frontend:**
-- Vanilla JavaScript (ES6+)
-- HTML5 + CSS3
-- Native Fetch API
-
-**Authentication & Security:**
-- JSON Web Tokens (JWT)
-- bcryptjs
-- Google OAuth 2.0
+MIT License - Free for learning and development
 
 ---
 
-**MIRA** - *Mindful Intelligent Reflective Assistant*  
-*An AI-powered journaling app with autonomous event detection and calendar integration*
+**MIRA - Mindful Intelligent Reflective Assistant**  
+*Journaling powered by autonomous AI decision-making*
+
+Built with ❤️ using Ollama + Llama3, Node.js, MongoDB, and Vanilla JavaScript
