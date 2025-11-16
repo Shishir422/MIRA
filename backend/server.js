@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const connectDB = require('./config/db');
 
-// Import routes
+// Import route
 const authRoutes = require('./routes/authRoutes');
 const journalRoutes = require('./routes/journalRoutes');
 const meetingRoutes = require('./routes/meetingRoutes');
@@ -15,7 +15,7 @@ const todoRoutes = require('./routes/todoRoutes');
 // Initialize Express app
 const app = express();
 
-// Connect to MongoDB
+// Connect to mongoDB
 connectDB();
 
 // Middleware
